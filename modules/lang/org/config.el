@@ -543,8 +543,8 @@ between the two."
         "C-c C-S-l"  #'+org/remove-link
         "C-c C-i"    #'org-toggle-inline-images
         ;; textmate-esque newline insertion
-        [C-return]   #'+org/insert-item-below
-        [C-S-return] #'+org/insert-item-above
+        ;; [C-return]   #'+org/insert-item-below
+        ;; [C-S-return] #'+org/insert-item-above
         [C-M-return] #'org-insert-subheading
         (:when IS-MAC
           [s-return]   #'+org/insert-item-below
@@ -750,8 +750,8 @@ compelling reason, so..."
   :config (setq toc-org-hrefify-default "gh"))
 
 
-(use-package! org-bullets ; "prettier" bullets
-  :hook (org-mode . org-bullets-mode))
+;; (use-package! org-bullets ; "prettier" bullets
+;;   :hook (org-mode . org-bullets-mode))
 
 
 (use-package! org-crypt ; built-in
@@ -810,8 +810,8 @@ compelling reason, so..."
              ;; Clear babel results if point is inside a src block
              #'+org-clear-babel-results-h)
   (map! :map evil-org-mode-map
-        :ni [C-return]   #'+org/insert-item-below
-        :ni [C-S-return] #'+org/insert-item-above
+        ;; :ni [C-return]   #'+org/insert-item-below
+        ;; :ni [C-S-return] #'+org/insert-item-above
         ;; navigate table cells (from insert-mode)
         :i "C-l" (general-predicate-dispatch 'org-end-of-line
                    (org-at-table-p) 'org-table-next-field)
