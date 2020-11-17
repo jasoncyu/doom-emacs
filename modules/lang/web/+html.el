@@ -4,21 +4,23 @@
   :mode "\\.[px]?html?\\'"
   :mode "\\.\\(?:tpl\\|blade\\)\\(?:\\.php\\)?\\'"
   :mode "\\.erb\\'"
-  :mode "\\.eex\\'"
+  :mode "\\.l?eex\\'"
   :mode "\\.jsp\\'"
   :mode "\\.as[cp]x\\'"
   :mode "\\.hbs\\'"
   :mode "\\.mustache\\'"
   :mode "\\.svelte\\'"
-  :mode "\\.vue\\'"
   :mode "\\.twig\\'"
-  :mode "\\.jinja\\'"
+  :mode "\\.jinja2?\\'"
+  :mode "\\.eco\\'"
   :mode "wp-content/themes/.+/.+\\.php\\'"
   :mode "templates/.+\\.php\\'"
-  ;; REVIEW We associate TSX files with `web-mode' because `typescript-mode'
-  ;;        does not officially support JSX/TSX. See
-  ;;        https://github.com/emacs-typescript/typescript.el/issues/4
-  :mode "\\.tsx\\'"
+  :init
+  ;; If the user has installed `vue-mode' then, by appending this to
+  ;; `auto-mode-alist' rather than prepending it, its autoload will have
+  ;; priority over this one.
+  (add-to-list 'auto-mode-alist '("\\.vue\\'" . web-mode) 'append)
+  :mode "\\.vue\\'"
   :config
   (set-docsets! 'web-mode "HTML" "CSS" "Twig" "WordPress")
 
@@ -28,7 +30,7 @@
     '("tidy" "-q" "-indent"
       "--tidy-mark" "no"
       "--drop-empty-elements" "no"
-      "--show-body-only" "true"  ; don't inject html/body tags
+      ("--show-body-only" "%s" (if +format-region-p "true" "auto"))
       ("--indent-spaces" "%d" tab-width)
       ("--indent-with-tabs" "%s" (if indent-tabs-mode "yes" "no"))
       ("-xml" (memq major-mode '(nxml-mode xml-mode))))
@@ -162,4 +164,6 @@
 
 
 (when (featurep! +lsp)
-  (add-hook! '(html-mode-hook web-mode-hook) #'lsp!))
+  (add-hook! '(html-mode-local-vars-hook
+               web-mode-local-vars-hook)
+             #'lsp!))

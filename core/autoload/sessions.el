@@ -71,6 +71,9 @@
   "TODO"
   (add-hook 'window-setup-hook #'doom-load-session 'append))
 
+;;;###autoload
+(add-to-list 'command-switch-alist (cons "--restore" #'doom-restore-session-handler))
+
 
 ;;
 ;;; Commands
@@ -130,8 +133,11 @@
   (interactive "P")
   (setq doom-autosave-session nil)
   (doom/quicksave-session)
-  (restart-emacs
-   (append (if debug (list "--debug-init"))
-           (when (boundp 'chemacs-current-emacs-profile)
-             (list "--with-profile" chemacs-current-emacs-profile))
-           (list "--restore"))))
+  (save-some-buffers nil t)
+  (letf! ((#'save-buffers-kill-emacs #'kill-emacs)
+          (confirm-kill-emacs))
+    (restart-emacs
+     (append (if debug (list "--debug-init"))
+             (when (boundp 'chemacs-current-emacs-profile)
+               (list "--with-profile" chemacs-current-emacs-profile))
+             (list "--restore")))))

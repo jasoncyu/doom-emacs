@@ -10,6 +10,10 @@
 (use-package! rustic
   :mode ("\\.rs$" . rustic-mode)
   :commands rustic-run-cargo-command rustic-cargo-outdated
+  :init
+  (after! org-src
+    (defalias 'org-babel-execute:rust #'org-babel-execute:rustic)
+    (add-to-list 'org-src-lang-modes '("rust" . rustic)))
   :config
   (set-docsets! 'rustic-mode "Rust")
   (set-popup-rule! "^\\*rustic-compilation" :vslot -1)
@@ -18,13 +22,16 @@
         ;; use :editor format instead
         rustic-format-trigger nil)
 
-  (add-hook 'rustic-mode-hook #'rainbow-delimiters-mode)
-
   (if (featurep! +lsp)
       (add-hook 'rustic-mode-local-vars-hook #'lsp!)
     (setq rustic-lsp-server nil)
     (after! rustic-flycheck
       (add-to-list 'flycheck-checkers 'rustic-clippy)))
+
+  (when (featurep! +lsp)
+    (if (featurep! :tools lsp +eglot)
+        (setq rustic-lsp-client 'eglot)
+      (setq rustic-lsp-client 'lsp-mode)))
 
   (map! :map rustic-mode-map
         :localleader
@@ -62,11 +69,11 @@
 
 (use-package! racer
   :unless (featurep! +lsp)
-  :hook (rustic-mode . racer-mode)
+  :hook (rustic-mode-local-vars . racer-mode)
   :init
   ;; HACK Fix #2132: `racer' depends on `rust-mode', which tries to modify
   ;;      `auto-mode-alist'. We make extra sure that doesn't stick, especially
-  ;;      when a buffer is reverted, as it is after rustfmt is done wiht it.
+  ;;      when a buffer is reverted, as it is after rustfmt is done with it.
   (after! rust-mode
     (setq auto-mode-alist (delete '("\\.rs\\'" . rust-mode) auto-mode-alist)))
   :config

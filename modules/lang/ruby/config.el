@@ -11,7 +11,7 @@
   ;; Other extensions are already registered in `auto-mode-alist' by `ruby-mode'
   :mode "\\.\\(?:a?rb\\|aslsx\\)\\'"
   :mode "/\\(?:Brew\\|Fast\\)file\\'"
-  :interpreter "j?ruby\\([0-9.]+\\)"
+  :interpreter "j?ruby\\(?:[0-9.]+\\)"
   :config
   (setq ruby-insert-encoding-magic-comment nil)
 
@@ -21,10 +21,8 @@
   (when (featurep! +lsp)
     (add-hook 'ruby-mode-local-vars-hook #'lsp!))
 
-  (after! company-dabbrev-code
-    (pushnew 'company-dabbrev-code-modes 'ruby-mode))
-
   (after! inf-ruby
+    (add-hook 'inf-ruby-mode-hook #'doom-mark-buffer-as-real-h)
     ;; switch to inf-ruby from compile if we detect a breakpoint has been hit
     (add-hook 'compilation-filter-hook #'inf-ruby-auto-enter))
 
@@ -43,15 +41,22 @@
   (add-hook! 'ruby-mode-hook
     (defun +ruby-init-robe-mode-maybe-h ()
       "Start `robe-mode' if `lsp-mode' isn't active."
-      (unless (or (bound-and-true-p lsp-mode)
-                  (bound-and-true-p lsp--buffer-deferred))
-        (robe-mode +1))))
+      (or (bound-and-true-p lsp-mode)
+          (bound-and-true-p lsp--buffer-deferred)
+          (robe-mode +1))))
   :config
   (set-repl-handler! 'ruby-mode #'robe-start)
   (set-company-backend! 'ruby-mode 'company-robe 'company-dabbrev-code)
   (set-lookup-handlers! 'ruby-mode
     :definition #'robe-jump
     :documentation #'robe-doc)
+  (when (boundp 'read-process-output-max)
+    ;; Robe can over saturate IPC, making interacting with it slow/clobbering
+    ;; the GC, so increase the amount of data Emacs reads from it at a time.
+    (setq-hook! '(robe-mode-hook inf-ruby-mode-hook)
+      read-process-output-max (* 1024 1024)))
+  (when (featurep! :editor evil)
+    (add-hook 'robe-mode-hook #'evil-normalize-keymaps))
   (map! :localleader
         :map robe-mode-map
         "'"  #'robe-start
@@ -89,10 +94,11 @@
   :defer t
   :init
   (setq rake-cache-file (concat doom-cache-dir "rake.cache"))
+  (setq rake-completion-system 'default)
   (map! :after ruby-mode
         :localleader
         :map ruby-mode-map 
-        :prefix "k"
+        :prefix ("k" . "rake")
         "k" #'rake
         "r" #'rake-rerun
         "R" #'rake-regenerate-cache
@@ -104,7 +110,7 @@
   (map! :after ruby-mode
         :localleader
         :map ruby-mode-map
-        :prefix "b"
+        :prefix ("b" . "bundle")
         "c" #'bundle-check
         "C" #'bundle-console
         "i" #'bundle-install
@@ -134,6 +140,7 @@
   (when (featurep! :editor evil)
     (add-hook 'rspec-mode-hook #'evil-normalize-keymaps))
   :config
+  (set-popup-rule! "^\\*\\(rspec-\\)?compilation" :size 0.3 :ttl nil :select t)
   (setq rspec-use-rvm (executable-find "rvm"))
   (map! :localleader
         :prefix "t"
@@ -173,17 +180,19 @@
 
 (use-package! projectile-rails
   :when (featurep! +rails)
-  :hook (ruby-mode . projectile-rails-mode)
+  :hook ((ruby-mode inf-ruby-mode projectile-rails-server-mode) . projectile-rails-mode)
+  :hook (projectile-rails-server-mode . doom-mark-buffer-as-real-h)
+  :hook (projectile-rails-mode . auto-insert-mode)
   :init
+  (setq auto-insert-query nil)
+  (setq projectile-rails-custom-server-command "bundle exec spring rails server --no-log-to-stdout")
   (setq inf-ruby-console-environment "development")
   (when (featurep! :lang web)
     (add-hook 'web-mode-hook #'projectile-rails-mode))
   :config
+  (set-popup-rule! "^\\*\\(projectile-\\)?rails" :ttl nil)
   (when (featurep! :editor evil)
     (add-hook 'projectile-rails-mode-hook #'evil-normalize-keymaps))
   (map! :localleader
         :map projectile-rails-mode-map
-        "r" #'projectile-rails-command-map)
-  (push '((nil . "projectile-rails-\\(.+\\)") . (nil . "\\1"))
-        which-key-replacement-alist)
-  (set-popup-rule! "^\\*\\(projectile-\\)?rails" :ttl nil))
+        "r" #'projectile-rails-command-map))

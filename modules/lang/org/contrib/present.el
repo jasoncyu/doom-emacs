@@ -11,15 +11,11 @@
 ;;
 ;;; Packages
 
-(use-package! ox-reveal
+(use-package! org-re-reveal
   :after ox
-  :init
-  ;; Fix #1127, where ox-reveal adds an errant entry to
-  ;; `org-structure-template-alist'
-  (setq org-reveal-note-key-char nil)
   :config
-  (setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js@3/"
-        org-reveal-mathjax t))
+  (setq org-re-reveal-root (expand-file-name "../../" (locate-library "dist/reveal.js" t))
+        org-re-reveal-revealjs-version "4"))
 
 
 (use-package! org-tree-slide
@@ -46,20 +42,19 @@
   (defadvice! +org-present--narrow-to-subtree-a (orig-fn &rest args)
     "Narrow to the target subtree when you start the presentation."
     :around #'org-tree-slide--display-tree-with-narrow
-    (cl-letf (((symbol-function #'org-narrow-to-subtree)
-               (lambda ()
-                 (save-excursion
-                   (save-match-data
-                     (org-with-limited-levels
-                      (narrow-to-region
-                       (progn
-                         (when (org-before-first-heading-p)
-                           (org-next-visible-heading 1))
-                         (ignore-errors (org-up-heading-all 99))
-                         (forward-line 1)
-                         (point))
-                       (progn (org-end-of-subtree t t)
-                              (when (and (org-at-heading-p) (not (eobp)))
-                                (backward-char 1))
-                              (point)))))))))
+    (letf! (defun org-narrow-to-subtree ()
+             (save-excursion
+               (save-match-data
+                 (org-with-limited-levels
+                  (narrow-to-region
+                   (progn
+                     (when (org-before-first-heading-p)
+                       (org-next-visible-heading 1))
+                     (ignore-errors (org-up-heading-all 99))
+                     (forward-line 1)
+                     (point))
+                   (progn (org-end-of-subtree t t)
+                          (when (and (org-at-heading-p) (not (eobp)))
+                            (backward-char 1))
+                          (point)))))))
       (apply orig-fn args))))

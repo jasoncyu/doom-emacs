@@ -7,16 +7,17 @@
 ;;
 ;;; Packages
 
-(add-to-list 'auto-mode-alist '("\\.\\(?:offlineimap\\|mbsync\\)rc\\'" . conf-mode))
-
-
 (use-package! mu4e
   :commands mu4e mu4e-compose-new
   :init
   (provide 'html2text) ; disable obsolete package
-  (setq mu4e-maildir "~/.mail"
-        mu4e-attachment-dir "~/.mail/.attachments"
-        mu4e-user-mail-address-list nil)
+  (when (or (not (require 'mu4e-meta nil t))
+            (version< mu4e-mu-version "1.4"))
+    (setq mu4e-maildir "~/.mail"
+          mu4e-user-mail-address-list nil))
+  (setq mu4e-attachment-dir
+        (lambda (&rest _)
+          (expand-file-name ".attachments" (mu4e-root-maildir))))
   :config
   (pcase +mu4e-backend
     (`mbsync
@@ -60,11 +61,7 @@
   (setq mail-user-agent 'mu4e-user-agent)
 
   ;; Use fancy icons
-  (setq mu4e-headers-has-child-prefix '("+" . "")
-        mu4e-headers-empty-parent-prefix '("-" . "")
-        mu4e-headers-first-child-prefix '("\\" . "")
-        mu4e-headers-duplicate-prefix '("=" . "")
-        mu4e-headers-default-prefix '("|" . "")
+  (setq mu4e-use-fancy-chars t
         mu4e-headers-draft-mark '("D" . "")
         mu4e-headers-flagged-mark '("F" . "")
         mu4e-headers-new-mark '("N" . "")
@@ -94,6 +91,9 @@
   ;; Wrap text in messages
   (setq-hook! 'mu4e-view-mode-hook truncate-lines nil)
 
+  ;; Html mails might be better rendered in a browser
+  (add-to-list 'mu4e-view-actions '("View in browser" . mu4e-action-view-in-browser))
+
   (when (fboundp 'imagemagick-register-types)
     (imagemagick-register-types))
 
@@ -105,16 +105,13 @@
         :desc "attach"        "a" #'mail-add-attachment))
 
 
-(use-package! org-mu4e
-  :hook (mu4e-compose-mode . org-mu4e-compose-org-mode)
+(use-package! org-msg
+  :hook (mu4e-compose-pre . org-msg-mode)
   :config
-  (setq org-mu4e-link-query-in-headers-mode nil
-        org-mu4e-convert-to-html t)
+  (setq org-msg-startup "inlineimages"
+        org-msg-greeting-name-limit 3
+        org-msg-text-plain-alternative t))
 
-  ;; Only render to html once. If the first send fails for whatever reason,
-  ;; org-mu4e would do so each time you try again.
-  (add-hook! 'message-send-hook
-    (setq-local org-mu4e-convert-to-html nil)))
 
 
 ;;

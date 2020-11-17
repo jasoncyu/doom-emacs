@@ -6,6 +6,13 @@
     (nixos-options-get-documentation-for-option candidate))))
 
 ;;;###autoload
+(defun +nix/open-repl ()
+  "Open a nix repl."
+  (interactive)
+  (nix-repl-show)
+  (current-buffer))
+
+;;;###autoload
 (defun +nix/lookup-option (&optional initial-input)
   "Look up documentation on a nix option."
   (interactive
@@ -46,7 +53,8 @@
   (save-excursion
     (goto-char (point-min))
     (save-match-data
-      (when (re-search-forward "#! *\\(?:cached-\\)?nix-shell +-i +\\([^ \n]+\\)" 256 t)
+      (if (not (re-search-forward "#! *\\(?:cached-\\)?nix-shell +-i +\\([^ \n]+\\)" 256 t))
+          (message "Couldn't determine mode for this script")
         (let* ((interp (match-string 1))
                (mode
                 (assoc-default

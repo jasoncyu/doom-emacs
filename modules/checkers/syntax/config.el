@@ -5,14 +5,19 @@
 
 (use-package! flycheck
   :commands flycheck-list-errors flycheck-buffer
-  :after-call doom-switch-buffer-hook after-find-file
+  :hook (doom-first-buffer . global-flycheck-mode)
   :config
   (setq flycheck-emacs-lisp-load-path 'inherit)
 
   ;; Check only when saving or opening files. Newline & idle checks are a mote
-  ;; excessive, especially when that can easily catch code in an incomplete
-  ;; state, so we removed them.
-  (setq flycheck-check-syntax-automatically '(save mode-enabled))
+  ;; excessive and can catch code in an incomplete state, producing false
+  ;; positives, so we removed them.
+  (setq flycheck-check-syntax-automatically '(save mode-enabled idle-buffer-switch))
+
+  ;; For the above functionality, check syntax in a buffer that you switched to
+  ;; only briefly. This allows "refreshing" the syntax check state for several
+  ;; buffers quickly after e.g. changing a config file.
+  (setq flycheck-buffer-switch-check-intermediate-buffers t)
 
   ;; Display errors a little quicker (default is 0.9s)
   (setq flycheck-display-errors-delay 0.25)
@@ -34,16 +39,14 @@
         :n "j"      #'flycheck-error-list-next-error
         :n "k"      #'flycheck-error-list-previous-error
         :n "RET"    #'flycheck-error-list-goto-error
-        :n [return] #'flycheck-error-list-goto-error)
-
-  (global-flycheck-mode +1))
+        :n [return] #'flycheck-error-list-goto-error))
 
 
 (use-package! flycheck-popup-tip
   :commands flycheck-popup-tip-show-popup flycheck-popup-tip-delete-popup
-  :init (add-hook 'flycheck-mode-hook #'+syntax-init-popups-h)
+  :hook (flycheck-mode . +syntax-init-popups-h)
   :config
-  (setq flycheck-popup-tip-error-prefix "✕ ")
+  (setq flycheck-popup-tip-error-prefix "X ")
   (after! evil
     ;; Don't display popups while in insert or replace mode, as it can affect
     ;; the cursor's position or cause disruptive input delays.
@@ -58,12 +61,11 @@
 
 (use-package! flycheck-posframe
   :when (featurep! +childframe)
-  :defer t
-  :init (add-hook 'flycheck-mode-hook #'+syntax-init-popups-h)
+  :hook (flycheck-mode . +syntax-init-popups-h)
   :config
-  (setq flycheck-posframe-warning-prefix "⚠ "
+  (setq flycheck-posframe-warning-prefix "! "
         flycheck-posframe-info-prefix "··· "
-        flycheck-posframe-error-prefix "✕ ")
+        flycheck-posframe-error-prefix "X ")
   (after! company
     ;; Don't display popups if company is open
     (add-hook 'flycheck-posframe-inhibit-functions #'company--active-p))

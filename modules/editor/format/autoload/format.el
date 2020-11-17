@@ -102,7 +102,11 @@ Stolen shamelessly from go-mode"
 (defun +format-probe-a (orig-fn)
   "Use `+format-with' instead, if it is set.
 Prompts for a formatter if universal arg is set."
-  (cond (current-prefix-arg
+  (cond ((or (eq +format-with :none)
+             (doom-temp-buffer-p (current-buffer))
+             (derived-mode-p 'special-mode))
+         (list nil nil))
+        (current-prefix-arg
          (list (or (+format-completing-read)
                    (user-error "Aborted"))
                t))
@@ -197,21 +201,67 @@ See `+format/buffer' for the interactive version of this function, and
 ;;
 ;;; Commands
 
-;;;###autoload
-(defalias '+format/buffer #'format-all-buffer)
+(defun +format--org-region (beg end)
+  "Reformat the region within BEG and END.
+If nil, BEG and/or END will default to the boundaries of the src block at point."
+  (let ((element (org-element-at-point)))
+    (save-excursion
+      (let* ((block-beg (save-excursion
+                          (goto-char (org-babel-where-is-src-block-head element))
+                          (line-beginning-position 2)))
+             (block-end (save-excursion
+                          (goto-char (org-element-property :end element))
+                          (skip-chars-backward " \t\n")
+                          (line-beginning-position)))
+             (beg (if beg (max beg block-beg) block-beg))
+             (end (if end (min end block-end) block-end))
+             (lang (org-element-property :language element))
+             (major-mode (org-src-get-lang-mode lang)))
+        (if (eq major-mode 'org-mode)
+            (user-error "Cannot reformat an org src block in org-mode")
+          (+format/region beg end))))))
 
 ;;;###autoload
-(defun +format/region (beg end &optional arg)
+(defun +format/buffer ()
+  "Reformat the current buffer using LSP or `format-all-buffer'."
+  (interactive)
+  (if (and (eq major-mode 'org-mode)
+           (org-in-src-block-p t))
+      (+format--org-region nil nil)
+    (call-interactively
+     (cond ((and +format-with-lsp
+                 (bound-and-true-p lsp-mode)
+                 (lsp-feature? "textDocument/formatting"))
+            #'lsp-format-buffer)
+           ((and +format-with-lsp
+                 (bound-and-true-p eglot--managed-mode)
+                 (eglot--server-capable :documentFormattingProvider))
+            #'eglot-format-buffer)
+           (#'format-all-buffer)))))
+
+;;;###autoload
+(defun +format/region (beg end)
   "Runs the active formatter on the lines within BEG and END.
 
 WARNING: this may not work everywhere. It will throw errors if the region
 contains a syntax error in isolation. It is mostly useful for formatting
 snippets or single lines."
   (interactive "rP")
-  (save-restriction
-    (narrow-to-region beg end)
-    (let ((+format-region-p t))
-      (+format/buffer arg))))
+  (if (and (eq major-mode 'org-mode)
+           (org-in-src-block-p t))
+      (+format--org-region beg end)
+    (cond ((and +format-with-lsp
+                (bound-and-true-p lsp-mode)
+                (lsp-feature? "textDocument/rangeFormatting"))
+           (call-interactively #'lsp-format-region))
+          ((and +format-with-lsp
+                (bound-and-true-p eglot--managed-mode)
+                (eglot--server-capable :documentRangeFormattingProvider))
+           (call-interactively #'eglot-format))
+          ((save-restriction
+             (narrow-to-region beg end)
+             (let ((+format-region-p t))
+               (+format/buffer)))))))
 
 ;;;###autoload
 (defun +format/region-or-buffer ()
@@ -219,7 +269,7 @@ snippets or single lines."
 is selected)."
   (interactive)
   (call-interactively
-   (if (use-region-p)
+   (if (doom-region-active-p)
        #'+format/region
      #'+format/buffer)))
 

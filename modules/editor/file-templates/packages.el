@@ -1,4 +1,4 @@
 ;; -*- no-byte-compile: t; -*-
 ;;; editor/file-templates/packages.el
 
-(package! yasnippet :pin "3bf9a3b1af")
+(package! yasnippet :pin "5cbdbf0d2015540c59ed8ee0fcf4788effdf75b6")

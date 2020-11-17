@@ -21,16 +21,27 @@ If prefix ARG is set, prompt for a directory to search from."
   (+default/search-cwd 'other))
 
 ;;;###autoload
+(defun +default/search-buffer ()
+  "Conduct a text search on the current buffer.
+If a selection is active, pre-fill the prompt with it."
+  (interactive)
+  (call-interactively
+   (if (region-active-p)
+       #'swiper-isearch-thing-at-point
+     #'swiper-isearch)))
+
+;;;###autoload
 (defun +default/search-project (&optional arg)
   "Conduct a text search in the current project root.
-If prefix ARG is set, prompt for a known project to search from."
+If prefix ARG is set, include ignored/hidden files."
   (interactive "P")
-  (let* ((disabled-command-function nil)
+  (let* ((projectile-project-root nil)
+         (disabled-command-function nil)
+         (current-prefix-arg (unless (eq arg 'other) arg))
          (default-directory
-           (if arg
+           (if (eq arg 'other)
                (if-let (projects (projectile-relevant-known-projects))
-                   (completing-read "Search project: " projects
-                                    nil t nil nil (doom-project-root))
+                   (completing-read "Search project: " projects nil t)
                  (user-error "There are no known projects"))
              default-directory)))
     (call-interactively
@@ -51,13 +62,13 @@ If prefix ARG is set, prompt for a known project to search from."
   (interactive
    (list (rxt-quote-pcre (or (doom-thing-at-point-or-region) ""))
          current-prefix-arg))
-  (let ((default-directory
-          (if arg
-              (if-let (projects (projectile-relevant-known-projects))
-                  (completing-read "Switch to project: " projects
-                                   nil t nil nil (doom-project-root))
-                (user-error "There are no known projects"))
-            default-directory)))
+  (let* ((projectile-project-root nil)
+         (default-directory
+           (if arg
+               (if-let (projects (projectile-relevant-known-projects))
+                   (completing-read "Search project: " projects nil t)
+                 (user-error "There are no known projects"))
+             default-directory)))
     (cond ((featurep! :completion ivy)
            (+ivy/project-search nil symbol))
           ((featurep! :completion helm)

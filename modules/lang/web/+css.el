@@ -1,13 +1,12 @@
 ;;; lang/web/+css.el -*- lexical-binding: t; -*-
 
-;; An improved newline+continue comment function
-(setq-hook! css-mode
-  comment-indent-function #'+css/comment-indent-new-line)
+(defvar +web-continue-block-comments t
+  "If non-nil, newlines in block comments are continued with a leading *.
 
-(after! (:any css-mode sass-mode)
-  (set-docsets! '(css-mode scss-mode sass-mode)
-    "CSS" "HTML" "Bourbon" "Compass"
-    ["Sass" (memq major-mode '(scss-mode sass-mode))]))
+This also indirectly means the asterisks in the opening /* and closing */ will
+be aligned.
+
+If set to `nil', disable all the above behaviors.")
 
 (after! projectile
   (pushnew! projectile-other-file-alist
@@ -21,13 +20,25 @@
 ;;
 ;;; Major modes
 
+(setq-hook! 'css-mode-hook
+  ;; Correctly continue /* and // comments on newline-and-indent
+  comment-line-break-function #'+css/comment-indent-new-line
+  ;; Fix `fill-paragraph' not conjoining line comments in CSS modes correctly.
+  adaptive-fill-function #'+css-adaptive-fill-fn
+  ;; Fix filled lines not being auto-prefixed with a * when needed.
+  adaptive-fill-first-line-regexp "\\'[ \t]*\\(?:\\* *\\)?\\'")
+
+(after! (:any css-mode sass-mode)
+  (set-docsets! '(css-mode scss-mode sass-mode)
+    "CSS" "HTML" "Bourbon" "Compass"
+    ["Sass" (memq major-mode '(scss-mode sass-mode))]))
+
 (add-hook! '(css-mode-hook sass-mode-hook stylus-mode-hook)
            #'rainbow-mode)
 
-;; built-in, and contains both css-mode & scss-mode
+;; built-in. Contains both css-mode & scss-mode
 (after! css-mode
   ;; css-mode hooks apply to scss and less-css modes
-  (add-hook 'css-mode-hook #'rainbow-delimiters-mode)
   (map! :localleader
         :map scss-mode-map
         "b" #'+css/scss-build
@@ -61,5 +72,8 @@
 ;;; Tools
 
 (when (featurep! +lsp)
-  (add-hook! '(css-mode-hook sass-mode-hook less-css-mode-hook)
+  (add-hook! '(css-mode-local-vars-hook
+               scss-mode-local-vars-hook
+               sass-mode-local-vars-hook
+               less-css-mode-local-vars-hook)
              #'lsp!))

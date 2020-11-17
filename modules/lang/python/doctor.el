@@ -5,7 +5,7 @@
          "This module requires (:tools lsp)")
 
 (if (not (executable-find "python"))
-    (error! "Python isn't installed.")
+    (error! "Couldn't find python in your PATH")
   (unless (featurep! +lsp)
     (unless (zerop (shell-command "python -c 'import setuptools'"))
       (warn! "setuptools wasn't detected, which anaconda-mode requires"))))
@@ -19,6 +19,10 @@
 (when (featurep! +conda)
   (unless (executable-find "conda")
     (warn! "Couldn't find conda in your PATH")))
+
+(when (featurep! +poetry)
+  (if (not (executable-find "poetry"))
+      (warn! "Couldn't find poetry in your PATH")))
 
 (when (featurep! +cython)
   (unless (executable-find "cython")

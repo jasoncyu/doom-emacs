@@ -1,10 +1,26 @@
 ;;; tools/magit/autoload.el -*- lexical-binding: t; -*-
 
-;; HACK Magit complains loudly when it can't determine its own version, which is
-;;      the case when magit is built through straight. The warning is harmless,
-;;      however, so we just need it to shut up.
+;; HACK Magit complains loudly (but harmlessly) when it can't determine its own
+;;      version in a sparse clone. This was fixed upstream in
+;;      magit/magit@b1b2683, but only for macOS and Linux users. Windows doesn't
+;;      support symlinks as unix knows them, so `magit-version' can't resolve
+;;      its own repo's path.
 ;;;###autoload
-(advice-add #'magit-version :override #'ignore)
+(eval-when! IS-WINDOWS
+  (defadvice! +magit--ignore-version-a (&optional print-dest)
+    :override #'magit-version
+    (when print-dest
+      (defvar magit-git-debug)
+      (princ (format "Magit (unknown), Git %s, Emacs %s, %s"
+                     (or (let ((magit-git-debug
+                                (lambda (err)
+                                  (display-warning '(magit git) err :error))))
+                           (magit-git-version t))
+                         "(unknown)")
+                     emacs-version
+                     system-type)
+             print-dest))
+    nil))
 
 ;;;###autoload
 (defun +magit-display-buffer-fn (buffer)
@@ -37,7 +53,41 @@
                                magit-diff-mode
                                magit-stash-mode
                                magit-status-mode))))
-              '(display-buffer-same-window))))))
+              '(display-buffer-same-window))
+
+             ('(+magit--display-buffer-in-direction))))))
+
+(defun +magit--display-buffer-in-direction (buffer alist)
+  "`display-buffer-alist' handler that opens BUFFER in a direction.
+
+This differs from `display-buffer-in-direction' in one way: it will try to use a
+window that already exists in that direction. It will split otherwise."
+  (let ((direction (or (alist-get 'direction alist)
+                       +magit-open-windows-in-direction))
+        (origin-window (selected-window)))
+    (if-let (window (window-in-direction direction))
+        (unless magit-display-buffer-noselect
+          (select-window window))
+      (if-let (window (and (not (one-window-p))
+                           (window-in-direction
+                            (pcase direction
+                              (`right 'left)
+                              (`left 'right)
+                              ((or `up `above) 'down)
+                              ((or `down `below) 'up)))))
+        (unless magit-display-buffer-noselect
+          (select-window window))
+        (let ((window (split-window nil nil direction)))
+          (when (and (not magit-display-buffer-noselect)
+                     (memq direction '(right down below)))
+            (select-window window))
+          (display-buffer-record-window 'reuse window buffer)
+          (set-window-buffer window buffer)
+          (set-window-parameter window 'quit-restore (list 'window 'window origin-window buffer))
+          (set-window-prev-buffers window nil))))
+    (unless magit-display-buffer-noselect
+      (switch-to-buffer buffer t t)
+      (selected-window))))
 
 
 ;;
@@ -48,16 +98,12 @@
 (defun +magit--revert-buffer (buffer)
   (with-current-buffer buffer
     (kill-local-variable '+magit--stale-p)
-    (let ((buffer (or (buffer-base-buffer) (current-buffer))))
-      (if-let (file (buffer-file-name buffer))
-          (and (file-exists-p file)
-               (or (not (buffer-modified-p buffer))
-                   (y-or-n-p
-                    (format "Version control data is outdated in %s, but it is unsaved. Revert anyway?"
-                            buffer)))
-               (revert-buffer t t))
-        (when (and vc-mode (fboundp 'vc-refresh-state))
-          (vc-refresh-state))))))
+    (when buffer-file-name
+      (if (buffer-modified-p (current-buffer))
+          (when (bound-and-true-p vc-mode)
+            (vc-refresh-state)
+            (force-mode-line-update))
+        (revert-buffer t t)))))
 
 ;;;###autoload
 (defun +magit-mark-stale-buffers-h ()

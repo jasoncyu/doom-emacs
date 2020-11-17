@@ -47,7 +47,7 @@ ignored. This makes it easy to override built-in snippets with private ones."
                                         (abbreviate-file-name (yas--template-load-file tpl)))
                       collect
                       (progn
-                        (set-text-properties 0 (length txt) `(uuid ,(yas--template-name tpl)
+                        (set-text-properties 0 (length txt) `(uuid ,(yas--template-uuid tpl)
                                                                    path ,(yas--template-load-file tpl))
                                              txt)
                         txt))
@@ -169,9 +169,9 @@ buggy behavior when <delete> is pressed in an empty field."
   (interactive
    (list
     (+snippet--completing-read-uuid "Visit snippet: " current-prefix-arg)))
-  (if-let (template (yas--get-template-by-uuid major-mode template-uuid))
-      (let* ((template (yas--get-template-by-uuid major-mode template-uuid))
-             (template-path (yas--template-load-file template)))
+  (if-let* ((template (yas--get-template-by-uuid major-mode template-uuid))
+            (template-path (yas--template-load-file template)))
+      (progn
         (unless (file-readable-p template-path)
           (user-error "Cannot read %S" template-path))
         (find-file template-path)
@@ -239,21 +239,22 @@ shadow the default snippet)."
    (list
     (+snippet--completing-read-uuid "Select snippet to alias: "
                                     current-prefix-arg)))
-  (let* ((major-mode (if (eq major-mode 'snippet-mode)
-                         (intern (file-name-base (directory-file-name default-directory)))
-                       major-mode))
-         (template (yas--get-template-by-uuid major-mode template-uuid))
-         (template-path (yas--template-load-file template)))
-    (if (file-in-directory-p template-path +snippets-dir)
-        (find-file template-path)
-      (let ((buf (get-buffer-create (format "*%s*" (file-name-nondirectory template-path)))))
-        (with-current-buffer (switch-to-buffer buf)
-          (insert-file-contents template-path)
-          (snippet-mode)
-          (setq default-directory
-                (expand-file-name (file-name-nondirectory template-path)
-                                  (expand-file-name (symbol-name major-mode)
-                                                    +snippets-dir))))))))
+  (if-let* ((major-mode (if (eq major-mode 'snippet-mode)
+                            (intern (file-name-base (directory-file-name default-directory)))
+                          major-mode))
+            (template (yas--get-template-by-uuid major-mode template-uuid))
+            (template-path (yas--template-load-file template)))
+      (if (file-in-directory-p template-path +snippets-dir)
+          (find-file template-path)
+        (let ((buf (get-buffer-create (format "*%s*" (file-name-nondirectory template-path)))))
+          (with-current-buffer (switch-to-buffer buf)
+            (insert-file-contents template-path)
+            (snippet-mode)
+            (setq default-directory
+                  (expand-file-name (file-name-nondirectory template-path)
+                                    (expand-file-name (symbol-name major-mode)
+                                                      +snippets-dir))))))
+    (user-error "Couldn't find a snippet with uuid %S" template-uuid)))
 
 ;;;###autoload
 (defun +snippets-show-hints-in-header-line-h ()
@@ -288,16 +289,27 @@ shadow the default snippet)."
 
 ;;;###autoload
 (defun +snippets-expand-on-region-a (orig-fn &optional no-condition)
-  "Fix off-by-one issue with expanding snippets on an evil visual region, and
-switches to insert mode.
+  "Fix off-by-one when expanding snippets on an evil visual region.
 
-If evil-local-mode isn't enabled, run ORIG-FN as is."
+Also strips whitespace out of selection. Also switches to insert mode. If
+`evil-local-mode' isn't enabled, or we're not in visual mode, run ORIG-FN as
+is."
   (if (not (and (bound-and-true-p evil-local-mode)
                 (evil-visual-state-p)))
       (funcall orig-fn no-condition)
-    (evil-visual-select evil-visual-beginning evil-visual-end 'inclusive)
-    (cl-letf (((symbol-function 'region-beginning) (lambda () evil-visual-beginning))
-              ((symbol-function 'region-end)       (lambda () evil-visual-end)))
+    ;; Trim whitespace in selected region, so as not to introduce extra
+    ;; whitespace into `yas-selected-text'.
+    (evil-visual-select (save-excursion
+                          (goto-char evil-visual-beginning)
+                          (skip-chars-forward " \t")
+                          (point))
+                        (save-excursion
+                          (goto-char evil-visual-end)
+                          (skip-chars-backward " \t")
+                          (point))
+                        'inclusive)
+    (letf! ((defun region-beginning () evil-visual-beginning)
+            (defun region-end () evil-visual-end))
       (funcall orig-fn no-condition)))
   (when (and (bound-and-true-p evil-local-mode)
              (yas-active-snippets))

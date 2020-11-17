@@ -4,18 +4,11 @@
   (load! "+light"))
 
 
-(defvar +modeline--redisplayed-p nil)
-(defadvice! modeline-recalculate-height-a (&optional _force &rest _ignored)
-  "Ensure that window resizing functions take modeline height into account."
-  :before '(fit-window-to-buffer resize-temp-buffer-window)
-  (unless +modeline--redisplayed-p
-    (setq-local +modeline--redisplayed-p t)
-    (redisplay t)))
-
-
 (use-package! doom-modeline
   :unless (featurep! +light)
   :hook (after-init . doom-modeline-mode)
+  :hook (doom-modeline-mode . size-indication-mode) ; filesize in modeline
+  :hook (doom-modeline-mode . column-number-mode)   ; cursor column in modeline
   :init
   (unless after-init-time
     ;; prevent flash of unstyled modeline at startup
@@ -39,14 +32,18 @@
   (when (daemonp)
     (setq doom-modeline-icon t))
   :config
+  ;; HACK Fix #4102 due to empty all-the-icons return value (caused by
+  ;;      `doom--disable-all-the-icons-in-tty-a' advice) in tty daemon frames.
+  (defadvice! +modeline-disable-icon-in-daemon-a (orig-fn &rest args)
+    :around #'doom-modeline-propertize-icon
+    (when (display-graphic-p)
+      (apply orig-fn args)))
+
   ;; Fix an issue where these two variables aren't defined in TTY Emacs on MacOS
   (defvar mouse-wheel-down-event nil)
   (defvar mouse-wheel-up-event nil)
 
-  (size-indication-mode +1) ; filesize in modeline
-  (column-number-mode +1)   ; cursor column in modeline
-
-  (add-hook 'doom-change-font-size-hook #'+modeline-resize-for-font-h)
+  (add-hook 'after-setting-font-hook #'+modeline-resize-for-font-h)
   (add-hook 'doom-load-theme-hook #'doom-modeline-refresh-bars)
 
   (add-hook '+doom-dashboard-mode-hook #'doom-modeline-set-project-modeline)
@@ -72,4 +69,5 @@
 
   (use-package! evil-anzu
     :when (featurep! :editor evil)
-    :after-call evil-ex-start-search evil-ex-start-word-search evil-ex-search-activate-highlight))
+    :after-call evil-ex-start-search evil-ex-start-word-search evil-ex-search-activate-highlight
+    :config (global-anzu-mode +1)))

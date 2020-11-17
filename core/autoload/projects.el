@@ -41,8 +41,7 @@ they are absolute."
   "Preforms `projectile-find-file' in a known project of your choosing."
   (interactive
    (list
-    (completing-read "Find file in project: " (projectile-relevant-known-projects)
-                     nil nil nil nil (doom-project-root))))
+    (completing-read "Find file in project: " (projectile-relevant-known-projects))))
   (unless (file-directory-p project-root)
     (error "Project directory '%s' doesn't exist" project-root))
   (doom-project-find-file project-root))
@@ -52,8 +51,7 @@ they are absolute."
   "Preforms `find-file' in a known project of your choosing."
   (interactive
    (list
-    (completing-read "Browse in project: " (projectile-relevant-known-projects)
-                     nil nil nil nil (doom-project-root))))
+    (completing-read "Browse in project: " (projectile-relevant-known-projects))))
   (unless (file-directory-p project-root)
     (error "Project directory '%s' doesn't exist" project-root))
   (doom-project-browse project-root))
@@ -100,12 +98,11 @@ If DIR is not a project, it will be indexed (but not cached)."
     (error "Directory %S does not exist" dir))
   (unless (file-readable-p dir)
     (error "Directory %S isn't readable" dir))
-  (let* ((default-directory (file-truename (expand-file-name dir)))
-         (project-root (doom-project-root default-directory))
-         (projectile-project-root default-directory)
+  (let* ((default-directory (file-truename dir))
+         (projectile-project-root (doom-project-root dir))
          (projectile-enable-caching projectile-enable-caching))
-    (cond ((and project-root (file-equal-p project-root projectile-project-root))
-           (unless (doom-project-p projectile-project-root)
+    (cond ((and projectile-project-root (file-equal-p projectile-project-root default-directory))
+           (unless (doom-project-p default-directory)
              ;; Disable caching if this is not a real project; caching
              ;; non-projects easily has the potential to inflate the projectile
              ;; cache beyond reason.
@@ -119,8 +116,8 @@ If DIR is not a project, it will be indexed (but not cached)."
               #'projectile-find-file)))
           ((fboundp 'counsel-file-jump) ; ivy only
            (call-interactively #'counsel-file-jump))
-          ((project-current)
-           (project-find-file-in nil (list default-directory) nil))
+          ((project-current nil dir)
+           (project-find-file-in nil nil dir))
           ((fboundp 'helm-find-files)
            (call-interactively #'helm-find-files))
           ((call-interactively #'find-file)))))

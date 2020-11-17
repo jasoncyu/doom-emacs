@@ -3,14 +3,9 @@
 (after! projectile
   (add-to-list 'projectile-project-root-files "stack.yaml"))
 
-;; TODO ghcide?
-(cond ((featurep! +intero) (load! "+intero")) ; DEPRECATED
-      ((featurep! +dante)  (load! "+dante"))
-      ((featurep! +lsp)    (load! "+lsp")))
-
 
 ;;
-;; Common packages
+;;; Common packages
 
 (after! haskell-mode
   (setq haskell-process-suggest-remove-import-lines t  ; warnings for redundant imports etc
@@ -36,12 +31,22 @@
 
   (map! :map haskell-mode-map
         :n "o" #'+haskell/evil-open-below
-        :n "O" #'+haskell/evil-open-above)
+        :n "O" #'+haskell/evil-open-above
+        (:when (featurep! :tools lookup)
+         [remap haskell-mode-jump-to-def-or-tag] #'+lookup/definition))
 
   (map! :localleader
         :map haskell-mode-map
-        ;; this is set to use cabal for dante users and stack for intero users:
         "b" #'haskell-process-cabal-build
         "c" #'haskell-cabal-visit-file
         "h" #'haskell-hide-toggle
         "H" #'haskell-hide-toggle-all))
+
+
+;;
+;;; Backends
+
+(cond ((featurep! +dante)  (load! "+dante"))
+      ((or (featurep! +lsp)
+           (featurep! +ghcide))
+       (load! "+lsp")))

@@ -48,16 +48,24 @@
                         "end\\|[]}]"
                         "#\\|=begin"
                         ruby-forward-sexp)
-             (enh-ruby-mode "class\\|d\\(?:ef\\|o\\)\\|module\\|[[{]"
-                            "end\\|[]}]"
-                            "#\\|=begin"
-                            enh-ruby-forward-sexp nil)
              (matlab-mode "if\\|switch\\|case\\|otherwise\\|while\\|for\\|try\\|catch"
                           "end"
                           nil (lambda (_arg) (matlab-forward-sexp)))
              (nxml-mode "<!--\\|<[^/>]*[^/]>"
                         "-->\\|</[^/>]*[^/]>"
-                        "<!--" sgml-skip-tag-forward nil))
+                        "<!--" sgml-skip-tag-forward nil)
+             (latex-mode
+              ;; LaTeX-find-matching-end needs to be inside the env
+              ("\\\\begin{[a-zA-Z*]+}\\(\\)" 1)
+              "\\\\end{[a-zA-Z*]+}"
+              "%"
+              (lambda (_arg)
+                ;; Don't fold whole document, that's useless
+                (unless (save-excursion
+                          (search-backward "\\begin{document}"
+                                           (line-beginning-position) t))
+                  (LaTeX-find-matching-end)))
+              nil))
            hs-special-modes-alist
            '((t))))))
 

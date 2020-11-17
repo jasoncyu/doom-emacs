@@ -17,7 +17,7 @@ flycheck indicators moved to the right fringe.")
 
 
 ;;
-;; Packages
+;;; Packages
 
 (use-package! git-gutter
   :commands git-gutter:revert-hunk git-gutter:stage-hunk
@@ -39,35 +39,31 @@ is deferred until the file is saved. Respects `git-gutter:disabled-modes'."
                          (not (memq major-mode git-gutter:disabled-modes))))
               (if (and (display-graphic-p)
                        (require 'git-gutter-fringe nil t))
-                  (progn
-                    (setq-local git-gutter:init-function      #'git-gutter-fr:init)
-                    (setq-local git-gutter:view-diff-function #'git-gutter-fr:view-diff-infos)
-                    (setq-local git-gutter:clear-function     #'git-gutter-fr:clear)
-                    (setq-local git-gutter:window-width -1))
-                (setq-local git-gutter:init-function      'nil)
-                (setq-local git-gutter:view-diff-function #'git-gutter:view-diff-infos)
-                (setq-local git-gutter:clear-function     #'git-gutter:clear-diff-infos)
-                (setq-local git-gutter:window-width 1))
+                  (setq-local git-gutter:init-function      #'git-gutter-fr:init
+                              git-gutter:view-diff-function #'git-gutter-fr:view-diff-infos
+                              git-gutter:clear-function     #'git-gutter-fr:clear
+                              git-gutter:window-width -1)
+                (setq-local git-gutter:init-function      'nil
+                            git-gutter:view-diff-function #'git-gutter:view-diff-infos
+                            git-gutter:clear-function     #'git-gutter:clear-diff-infos
+                            git-gutter:window-width 1))
               (git-gutter-mode +1)
               (remove-hook 'after-save-hook #'+vc-gutter-init-maybe-h 'local)))))))
 
-  ;; Disable in Org mode, as per
-  ;; <https://github.com/syl20bnr/spacemacs/issues/10555> and
-  ;; <https://github.com/syohex/emacs-git-gutter/issues/24>. Apparently, the
-  ;; mode-enabling function for global minor modes gets called for new buffers
-  ;; while they are still in `fundamental-mode', before a major mode has been
-  ;; assigned. I don't know why this is the case, but adding `fundamental-mode'
-  ;; here fixes the issue.
+  ;; Disable in Org mode, as per syl20bnr/spacemacs#10555 and
+  ;; syohex/emacs-git-gutter#24. Apparently, the mode-enabling function for
+  ;; global minor modes gets called for new buffers while they are still in
+  ;; `fundamental-mode', before a major mode has been assigned. I don't know why
+  ;; this is the case, but adding `fundamental-mode' here fixes the issue.
   (setq git-gutter:disabled-modes '(fundamental-mode image-mode pdf-view-mode))
   :config
+  (set-popup-rule! "^\\*git-gutter" :select nil :size '+popup-shrink-to-fit)
+
   ;; Only enable the backends that are available, so it doesn't have to check
   ;; when opening each buffer.
-  (setq git-gutter:handled-backends '(git))
-  (dolist (backend '(hg svn bzr))
-    (when (executable-find (symbol-name backend))
-      (add-to-list 'git-gutter:handled-backends backend)))
-
-  (set-popup-rule! "^\\*git-gutter" :select nil :size '+popup-shrink-to-fit)
+  (setq git-gutter:handled-backends
+        (cons 'git (cl-remove-if-not #'executable-find (list 'hg 'svn 'bzr)
+                                     :key #'symbol-name)))
 
   ;; Update git-gutter on focus (in case I was using git externally)
   (add-hook 'focus-in-hook #'git-gutter:update-all-windows)
