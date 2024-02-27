@@ -71,9 +71,16 @@
 ;;;###autoload (autoload '+macos/open-in-iterm-new-window "os/macos/autoload" nil t)
 (+macos--open-with-iterm open-in-iterm-new-window default-directory t)
 
+;;;###autoload (autoload '+macos/open-in-kitty "os/macos/autoload" nil t)
 (defun +macos/open-in-kitty ()
   (interactive)
   ;; Open tab
-  (shell-command (format "kitty @ launch --to=%s --type tab --cwd %s" (getenv "KITTY_LISTEN_ON") (shell-quote-argument default-directory)))
+  (shell-command
+   (format
+    "kitty @ launch --to=%s --type tab --cwd %s"
+    "unix:/tmp/mykitty"
+    (shell-quote-argument
+     default-directory)))
+  ;; (shell-command (format "kitty @ launch --type tab --cwd %s" (shell-quote-argument default-directory)))
   ;; Focus Kitty
   (shell-command "open -a Kitty"))
