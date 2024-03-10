@@ -78,12 +78,16 @@
          [M-backspace] #'+snippets/delete-to-start-of-field
          [backspace]   #'+snippets/delete-backward-char
          [delete]      #'+snippets/delete-forward-char-or-field
+         [tab] #'yas-next-field-or-maybe-expand
+
+         ;; Prevent snippet expansion as you're filling fields, maybe good
+         [S-tab] #'yas-next-field
          ;; Replace commands with superior alternatives
          :map yas-minor-mode-map
          [remap yas-new-snippet]        #'+snippets/new
          [remap yas-visit-snippet-file] #'+snippets/edit)
         (:map snippet-mode-map
-         "C-c C-k" #'+snippet--abort))
+              "C-c C-k" #'+snippet--abort))
 
   ;; REVIEW Fix #2639: For some reason `yas--all-templates' returns duplicates
   ;;        of some templates. Until I figure out the real cause this fixes it.
