@@ -44,8 +44,10 @@ and Emacs states, and for non-evil users.")
         mac-option-modifier       'meta
         ns-option-modifier        'meta
         ;; Free up the right option for character composition
-        mac-right-option-modifier 'none
-        ns-right-option-modifier  'none))
+        ;; mac-right-option-modifier 'none
+        ;; ns-right-option-modifier  'none
+        mac-right-option-modifier 'meta
+        ns-right-option-modifier  'meta))
  (doom--system-windows-p
   (setq w32-lwindow-modifier 'super
         w32-rwindow-modifier 'super)))
