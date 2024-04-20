@@ -25,7 +25,7 @@
 
         ;; Buffer-local backends will be computed when loading a major mode, so
         ;; only specify a global default here.
-        company-backends '(company-capf)
+        company-backends '(company-capf company-dabbrev)
 
         ;; These auto-complete the current selection when
         ;; `company-auto-commit-chars' is typed. This is too magical. We
