@@ -260,6 +260,8 @@ or if the current buffer is read-only or not file-visiting."
         (sp-local-pair "{-#" "#-")
         (sp-local-pair "{-@" "@-")))
 
+    ;; Don't close parens in strings
+    (sp-local-pair 'prog-mode "(" ")" :unless '(sp-in-string-p))
     (after! smartparens-python
       (sp-with-modes 'python-mode
         ;; Automatically close f-strings
