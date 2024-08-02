@@ -31,6 +31,10 @@ overrides `completion-styles' during company completion sessions.")
   (setq vertico-resize nil
         vertico-count 17
         vertico-cycle t)
+  ;; Emacs 28 and newer: Hide commands in M-x which do not work in the current
+  ;; mode.  Vertico commands are hidden in normal buffers. This setting is
+  ;; useful beyond Vertico.
+  (setq read-extended-command-predicate #'command-completion-default-include-p)
   (setq-default completion-in-region-function
                 (lambda (&rest args)
                   (apply (if vertico-mode
@@ -396,4 +400,7 @@ orderless."
                  (+vertico-transform-functions . +vertico-highlight-directory)))
   (add-to-list 'vertico-multiform-commands
                '(execute-extended-command
-                 (+vertico-transform-functions . +vertico-highlight-enabled-mode))))
+                 (+vertico-transform-functions . +vertico-highlight-enabled-mode)))
+  (add-to-list 'vertico-multiform-commands
+              '(org-set-effort
+                (vertico-sort-function . vertico-sort-alpha))))
