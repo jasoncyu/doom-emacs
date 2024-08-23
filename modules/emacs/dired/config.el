@@ -139,7 +139,7 @@ we have to clean it up ourselves."
   :config
   (require 'dired-x)
   (setq dirvish-cache-dir (concat doom-cache-dir "dirvish/")
-        dirvish-hide-details nil
+        dirvish-hide-details t
         dirvish-attributes '(git-msg)
         dired-omit-files (concat dired-omit-files "\\|^\\..*$"))
   (when (modulep! +icons)

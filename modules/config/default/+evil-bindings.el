@@ -744,6 +744,9 @@
        :desc "Kill project buffers"         "k" #'projectile-kill-buffers
        :desc "Find sibling file"            "o" #'find-sibling-file
        :desc "Switch project"               "p" #'projectile-switch-project
+       (:when (modulep! :jason main)
+         :desc "jason main projectile" "p" #'consult-projectile-switch-project
+         )
        :desc "Find recent project files"    "r" #'projectile-recentf
        :desc "Run project"                  "R" #'projectile-run-project
        :desc "Save project files"           "s" #'projectile-save-project-buffers

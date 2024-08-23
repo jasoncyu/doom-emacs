@@ -54,7 +54,7 @@ TAB/S-TAB.")
         (corfu-mode +1))))
   :config
   (setq corfu-auto t
-        corfu-auto-delay 0.18
+        corfu-auto-delay 0.2
         corfu-auto-prefix 2
         global-corfu-modes '((not erc-mode
                                   circe-mode
@@ -63,7 +63,7 @@ TAB/S-TAB.")
                                   vterm-mode)
                              t)
         corfu-cycle t
-        corfu-preselect 'prompt
+        corfu-preselect 'first
         corfu-count 16
         corfu-max-width 120
         corfu-on-exact-match nil
@@ -72,6 +72,8 @@ TAB/S-TAB.")
                                    'separator t)
         corfu-quit-no-match corfu-quit-at-boundary
         tab-always-indent 'complete)
+  ;; higher for org mode since so many things to complete
+  ;; (setq-mode-local org-mode corfu-auto-delay 0.5)
   (add-to-list 'completion-category-overrides `(lsp-capf (styles ,@completion-styles)))
   (add-to-list 'corfu-auto-commands #'lispy-colon)
   (add-to-list 'corfu-continue-commands #'+corfu/move-to-minibuffer)
@@ -112,7 +114,7 @@ TAB/S-TAB.")
       (remove-hook 'completion-at-point-functions #'ispell-completion-at-point t)))))
 
 (use-package! cape
-  :defer t
+  ;; :defer t
   :init
   (add-hook! 'prog-mode-hook
     (defun +corfu-add-cape-file-h ()
