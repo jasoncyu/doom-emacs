@@ -1,11 +1,12 @@
 ;;; lang/haskell/config.el -*- lexical-binding: t; -*-
 
+;; DEPRECATED: Remove when projectile is replaced with project.el
 (after! projectile
   (add-to-list 'projectile-project-root-files "stack.yaml"))
 
 
 ;;
-;;; Common packages
+;;; Packages
 
 (after! haskell-mode
   (setq haskell-process-suggest-remove-import-lines t  ; warnings for redundant imports etc

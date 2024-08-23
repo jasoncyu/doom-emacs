@@ -28,6 +28,7 @@
      (jobs      ("-j" "--jobs" num) "How many threads to use for native compilation")
      (rebuild?  ("-b" "--rebuild") "Rebuild all installed packages, unconditionally")
      (nobuild?  ("-B") "Don't rebuild packages when hostname or Emacs version has changed")
+     (aot?      ("--aot") "Natively compile packages ahead-of-time (if available)")
      &context context)
   "Synchronize your config with Doom Emacs.
 
@@ -35,23 +36,30 @@ This is the equivalent of running autoremove, install, autoloads, then
 recompile. Run this whenever you:
 
   1. Modify your `doom!' block,
-  2. Add or remove `package!' blocks to your config,
-  3. Add or remove autoloaded functions in module autoloaded files,
-  4. Update Doom outside of Doom (e.g. with git),
+  2. Add, remove, or modify `package!' blocks to your config,
+  3. Add, remove, or modify autoloaded functions in module autoloaded files,
+  4. Update Doom manually (e.g. with git),
   5. Move your Doom config (either $EMACSDIR or $DOOMDIR) to a new location.
-  6. When you up (or down) grade Emacs itself.
+  6. Up or downgrade Emacs itself (e.g. 29.1 -> 29.4).
 
-It will ensure that unneeded packages are removed, all needed packages are
-installed, autoloads files are up-to-date and no byte-compiled files have gone
+Sync'ing ensures that unneeded packages are removed, needed packages are
+installed, autoloads files are up-to-date, and no byte-compiled files have gone
 stale.
 
 OPTIONS:
   -j, --jobs
     Defaults to the maximum number of threads (or 1, if your CPU's threadcount
-    can't be determined)."
+    can't be determined).
+  --aot
+    Will only perform AOT native-compilation for packages updated/installed
+    during the execution of this command. Use --rebuild as well to do so for all
+    packages."
   :benchmark t
   (when (doom-profiles-bootloadable-p)
     (call! '(profiles sync "--reload")))
+  (when aot?
+    (after! straight
+      (setq straight--native-comp-available t)))
   (when jobs
     (setq native-comp-async-jobs-number (truncate jobs)))
   (run-hooks 'doom-before-sync-hook)
@@ -73,7 +81,7 @@ OPTIONS:
           (when (and old-host (not (equal old-host (system-name))))
             (print! (warn "Your system has changed since last sync"))
             (setq to-rebuild t))
-          (when (and to-rebuild (not (doom-cli-context-suppress-prompts-p context)))
+          (when (and to-rebuild (not rebuild?) (not (doom-cli-context-suppress-prompts-p context)))
             (cond (nobuild?
                    (print! (warn "Packages must be rebuilt, but -B has prevented it. Skipping...")))
                   ((doom-cli-context-get context 'upgrading)

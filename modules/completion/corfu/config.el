@@ -28,8 +28,10 @@ TAB/S-TAB.")
   "If non-nil, prefer navigating org tables over cycling candidates with
 TAB/S-TAB.")
 
+
 ;;
 ;;; Packages
+
 (use-package! corfu
   :hook (doom-first-input . global-corfu-mode)
   :init
@@ -54,7 +56,7 @@ TAB/S-TAB.")
         (corfu-mode +1))))
   :config
   (setq corfu-auto t
-        corfu-auto-delay 0.2
+        corfu-auto-delay 0.24
         corfu-auto-prefix 2
         global-corfu-modes '((not erc-mode
                                   circe-mode

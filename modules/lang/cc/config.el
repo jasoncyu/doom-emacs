@@ -255,11 +255,7 @@ If rtags or rdm aren't available, fail silently instead of throwing a breaking e
                c++-mode-local-vars-hook
                objc-mode-local-vars-hook
                cmake-mode-local-vars-hook
-               ;; HACK Can't use cude-mode-local-vars-hook because cuda-mode
-               ;;   isn't a proper major mode (just a plain function
-               ;;   masquarading as one, so your standard mode hooks won't fire
-               ;;   from switching to cuda-mode).
-               cuda-mode-hook)
+               cuda-mode-local-vars-hook)
              :append #'lsp!)
 
   (map! :after ccls
@@ -282,6 +278,8 @@ If rtags or rdm aren't available, fail silently instead of throwing a breaking e
           :desc "References (Write)"    "w" #'+cc/ccls-show-references-write)))
 
   (when (modulep! :tools lsp +eglot)
+    (set-eglot-client! 'cuda-mode '("clangd"))
+
     ;; Map eglot specific helper
     (map! :localleader
           :after cc-mode
@@ -303,6 +301,9 @@ If rtags or rdm aren't available, fail silently instead of throwing a breaking e
   :defer t
   :init
   (defvar ccls-sem-highlight-method 'font-lock)
+  (after! project
+    (add-to-list 'project-vc-ignores "^\\.ccls-cache$"))
+  ;; DEPRECATED: Remove when projectile is replaced with project.el
   (after! projectile
     (add-to-list 'projectile-globally-ignored-directories "^.ccls-cache$")
     (add-to-list 'projectile-project-root-files-bottom-up ".ccls-root")

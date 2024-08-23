@@ -183,13 +183,6 @@ Only has an effect in GUI Emacs.")
       '("c r" "Review pull request" +magit/start-code-review))))
 
 
-(use-package! magit-todos
-  :after magit
-  :config
-  (setq magit-todos-keyword-suffix "\\(?:([^)]+)\\)?:?") ; make colon optional
-  (define-key magit-todos-section-map "j" nil))
-
-
 (use-package! evil-collection-magit
   :when (modulep! :editor evil +everywhere)
   :defer t
@@ -227,7 +220,10 @@ Only has an effect in GUI Emacs.")
         (:map magit-status-mode-map
          :nv "gz" #'magit-refresh)
         (:map magit-diff-mode-map
-         :nv "gd" #'magit-jump-to-diffstat-or-diff))
+         :nv "gd" #'magit-jump-to-diffstat-or-diff)
+        ;; Don't open recursive process buffers
+        (:map magit-process-mode-map
+         :nv "`" #'ignore))
 
   ;; A more intuitive behavior for TAB in magit buffers:
   (define-key! 'normal

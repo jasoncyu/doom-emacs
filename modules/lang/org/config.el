@@ -799,19 +799,22 @@ via an indirect buffer."
     `org-mode' when they're switched to so they can grow up to be fully-fledged
     org-mode buffers."
     :around #'org-get-agenda-file-buffer
-    (let ((recentf-exclude (list (lambda (_file) t)))
-          (doom-inhibit-large-file-detection t)
-          org-startup-indented
-          org-startup-folded
-          vc-handled-backends
-          org-mode-hook
-          find-file-hook)
-      (let ((buf (funcall fn file)))
-        (if buf
-         (with-current-buffer buf
-            (add-hook 'doom-switch-buffer-hook #'+org--restart-mode-h
-                      nil 'local)))
-       buf)))
+    (if-let (buf (org-find-base-buffer-visiting file))
+        buf
+      (let ((recentf-exclude (list (lambda (_file) t)))
+            (doom-inhibit-large-file-detection t)
+            org-startup-indented
+            org-startup-folded
+            vc-handled-backends
+            org-mode-hook
+            enable-local-variables
+            find-file-hook)
+        (let ((buf (funcall fn file)))
+          (when buf
+            (with-current-buffer buf
+              (add-hook 'doom-switch-buffer-hook #'+org--restart-mode-h
+                        nil 'local)))
+          buf))))
 
   (defadvice! +org--fix-inconsistent-uuidgen-case-a (uuid)
     "Ensure uuidgen is always lowercase (consistent) regardless of system.
@@ -1056,7 +1059,8 @@ between the two."
     '(("^\\*Org Links" :slot -1 :vslot -1 :size 2 :ttl 0)
       ("^ ?\\*\\(?:Agenda Com\\|Calendar\\|Org Export Dispatcher\\)"
        :slot -1 :vslot -1 :size #'+popup-shrink-to-fit :ttl 0)
-      ("^\\*Org \\(?:Select\\|Attach\\)" :slot -1 :vslot -2 :ttl 0 :size 0.25)
+      ("^\\*Org \\(?:Select\\|Attach\\|Table Edit\\)" :slot -1 :vslot -2 :ttl 0 :size 0.25)
+      ("^\\*Edit Formulas\\*$" :slot -1 :vslot -2 :ttl 0 :size 0.25)
       ("^\\*Org Agenda"     :ignore t)
       ("^\\*Org Src"        :size 0.42  :quit nil :select t :autosave t :modeline t :ttl nil)
       ("^\\*Org-Babel")

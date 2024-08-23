@@ -12,6 +12,7 @@
 (defvar +php-run-tests-in-docker nil
   "Whether or not to run tests in a docker environment")
 
+;; DEPRECATED: Remove when projectile is replaced with project.el
 (after! projectile
   (add-to-list 'projectile-project-root-files "composer.json"))
 
@@ -49,7 +50,7 @@
     :yield "use")
 
   (if (not (modulep! +lsp))
-      ;; `+php-company-backend' uses `company-phpactor', `php-extras-company' or
+      ;; `+php-company-backend' uses `php-extras-company' or
       ;; `company-dabbrev-code', in that order.
       (when +php--company-backends
         (set-company-backend! 'php-mode
@@ -77,24 +78,6 @@
         "s" #'phpunit-current-test))
 
 
-(use-package! phpactor
-  :unless (modulep! +lsp)
-  :after php-mode
-  :init
-  (add-to-list '+php--company-backends #'company-phpactor nil 'eq)
-  :config
-  (set-lookup-handlers! 'php-mode
-    :definition #'phpactor-goto-definition)
-  (map! :localleader
-        :map php-mode-map
-        :prefix ("r" . "refactor")
-        "cc" #'phpactor-copy-class
-        "mc" #'phpactor-move-class
-        "oi" #'phpactor-offset-info
-        "t"  #'phpactor-transform
-        "ic" #'phpactor-import-class))
-
-
 (use-package! php-refactor-mode
   :hook php-mode
   :config
@@ -110,13 +93,12 @@
 (use-package! php-extras
   :after php-mode
   :preface
+  (setq php-extras-eldoc-functions-file
+        (concat doom-profile-cache-dir "php-extras-eldoc-functions"))
   ;; We'll set up company support ourselves
   (advice-add #'php-extras-company-setup :override #'ignore)
-  :init
   (add-to-list '+php--company-backends #'php-extras-company)
   :config
-  (setq php-extras-eldoc-functions-file
-        (concat doom-data-dir "php-extras-eldoc-functions"))
   ;; Silence warning if `php-extras-eldoc-functions-file' hasn't finished
   ;; generating yet.
   (defun php-extras-load-eldoc ()

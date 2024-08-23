@@ -170,9 +170,10 @@
 
        :desc "Toggle last org-clock"          "c" #'+org/toggle-last-clock
        :desc "Cancel current org-clock"       "C" #'org-clock-cancel
-       :desc "Open deft"                      "d" #'deft
+       (:when (modulep! :ui deft)
+        :desc "Open deft"                     "d" #'deft)
        (:when (modulep! :lang org +noter)
-        :desc "Org noter"                    "e" #'org-noter)
+        :desc "Org noter"                     "e" #'org-noter)
 
        :desc "Find file in notes"             "f" #'+default/find-in-notes
        :desc "Browse notes"                   "F" #'+default/browse-notes
@@ -284,7 +285,6 @@
        :desc "Search project for symbol"   "." #'+default/search-project-for-symbol-at-point
        :desc "Find file in other project"  "F" #'doom/find-file-in-other-project
        :desc "Search project"              "s" #'+default/search-project
-       :desc "List project todos"          "t" #'magit-todos-list
        :desc "Open project scratch buffer" "x" #'doom/open-project-scratch-buffer
        :desc "Switch to project scratch buffer" "X" #'doom/switch-to-project-scratch-buffer
        (:when (and (modulep! :tools taskrunner)
