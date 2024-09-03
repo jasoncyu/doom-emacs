@@ -165,7 +165,7 @@ orderless."
    consult-ripgrep consult-git-grep consult-grep
    consult-bookmark consult-recent-file
    consult--source-recent-file consult--source-project-recent-file consult--source-bookmark
-   :preview-key "C-SPC")
+   :preview-key 'any)
   (when (modulep! :config default)
     (consult-customize
      +default/search-project +default/search-other-project
@@ -173,7 +173,7 @@ orderless."
      +default/search-cwd +default/search-other-cwd
      +default/search-notes-for-symbol-at-point
      +default/search-emacsd
-     :preview-key "C-SPC"))
+     :preview-key 'any))
   (consult-customize
    consult-theme
    :preview-key (list "C-SPC" :debounce 0.5 'any))
@@ -402,5 +402,8 @@ orderless."
                '(execute-extended-command
                  (+vertico-transform-functions . +vertico-highlight-enabled-mode)))
   (add-to-list 'vertico-multiform-commands
-              '(org-set-effort
+               '(org-set-effort
+                (vertico-sort-function . vertico-sort-alpha)))
+  (add-to-list 'vertico-multiform-commands
+               '(jason--clock-in-hook
                 (vertico-sort-function . vertico-sort-alpha))))

@@ -65,7 +65,9 @@ TAB/S-TAB.")
                                   vterm-mode)
                              t)
         corfu-cycle t
-        corfu-preselect 'first
+        ;; Keep at prompt rather than first: That way if you press enter it's
+        ;; always what you typed and not
+        corfu-preselect 'prompt
         corfu-count 16
         corfu-max-width 120
         corfu-on-exact-match nil
@@ -126,7 +128,8 @@ TAB/S-TAB.")
       (add-hook 'completion-at-point-functions #'cape-elisp-block 0 t)))
   ;; Enable Dabbrev completion basically everywhere as a fallback.
   (when (modulep! +dabbrev)
-    (setq cape-dabbrev-check-other-buffers t)
+    ;; Adds too much random other stuff
+    (setq cape-dabbrev-check-other-buffers nil)
     ;; Set up `cape-dabbrev' options.
     (defun +dabbrev-friend-buffer-p (other-buffer)
       (< (buffer-size other-buffer) +corfu-buffer-scanning-size-limit))
@@ -166,7 +169,8 @@ TAB/S-TAB.")
   :init
   (add-hook! 'yas-minor-mode-hook
     (defun +corfu-add-yasnippet-capf-h ()
-      (add-hook 'completion-at-point-functions #'yasnippet-capf 30 t))))
+      ;; Move to front
+      (add-hook 'completion-at-point-functions #'yasnippet-capf -20 t))))
 
 (use-package! corfu-terminal
   :when (modulep! :os tty)
