@@ -53,7 +53,6 @@ If any return non-nil, `corfu-auto' will not invoke as-you-type completion.")
         corfu-cycle t
         ;; Keep at prompt rather than first: That way if you press enter it's
         ;; always what you typed and not
-        ;; Keep at first: Matches other editor behavior
         corfu-preselect 'prompt
         corfu-count 16
         corfu-max-width 120
@@ -209,6 +208,7 @@ This function respects the value of `+corfu-want-minibuffer-completion':
   :init
   (add-hook! 'yas-minor-mode-hook
     (defun +corfu-add-yasnippet-capf-h ()
+      ;; (add-hook 'completion-at-point-functions #'yasnippet-capf -20 t)
       (defun remove-from-list (list-var element)
         (set list-var (delq element (symbol-value list-var))))
       ;; Move to front
