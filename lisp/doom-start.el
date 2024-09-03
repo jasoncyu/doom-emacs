@@ -150,7 +150,8 @@
 
 
 ;;; Support for Doom-specific file extensions
-(add-to-list 'auto-mode-alist '("/\\.doom\\(?:rc\\|project\\|module\\|profile\\)\\'" . emacs-lisp-mode))
+(add-to-list 'auto-mode-alist '("/\\.doom\\(?:project\\|module\\|profile\\)\\'" . lisp-data-mode))
+(add-to-list 'auto-mode-alist '("/\\.doomrc\\'" . emacs-lisp-mode))
 
 
 ;;
@@ -322,6 +323,15 @@ If RETURN-P, return the message as a string instead of displaying it."
 (doom-run-hook-on 'doom-first-buffer-hook '(find-file-hook doom-switch-buffer-hook))
 (doom-run-hook-on 'doom-first-file-hook   '(find-file-hook dired-initial-position-hook))
 (doom-run-hook-on 'doom-first-input-hook  '(pre-command-hook))
+
+;; If the user's already opened something (e.g. with command-line arguments),
+;; then we should assume nothing about the user's intentions and simply treat
+;; this session as fully initialized.
+(add-hook! 'doom-after-init-hook :depth 100
+  (defun doom-run-first-hooks-if-files-open-h ()
+    (when file-name-history
+      (doom-run-hooks 'doom-first-file-hook 'doom-first-buffer-hook))))
+
 ;; PERF: Activate these later, otherwise they'll fire for every buffer created
 ;;   between now and the end of startup.
 (add-hook! 'after-init-hook
@@ -385,7 +395,15 @@ If RETURN-P, return the message as a string instead of displaying it."
               ;; the next file it loads into `user-init-file'.
               (setq user-init-file t)
               (when init-file-name
-                (load init-file-name 'noerror 'nomessage 'nosuffix))
+                (load init-file-name 'noerror 'nomessage 'nosuffix)
+                ;; HACK: if `init-file-name' happens to be higher in
+                ;;   `load-history' than a symbol's actual definition,
+                ;;   `symbol-file' (and help/helpful buffers) will report the
+                ;;   source of a symbol as `init-file-name', rather than it's
+                ;;   true source. By removing this file from `load-history', no
+                ;;   one will make that mistake.
+                (setq load-history (delete (assoc init-file-name load-history)
+                                           load-history)))
               ;; If it's still `t', then it failed to load the profile initfile.
               ;; This likely means the user has forgotten to run `doom sync'!
               (when (eq user-init-file t)

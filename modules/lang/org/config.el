@@ -540,9 +540,9 @@ relative to `org-directory', unless it is an absolute path."
   ;; documentation -- especially Doom's!
   (letf! ((defun -call-interactively (fn)
             (lambda (path _prefixarg)
-              (funcall
-               fn (or (intern-soft path)
-                      (user-error "Can't find documentation for %S" path))))))
+              (funcall (or (command-remapping fn) fn)
+                       (or (intern-soft path)
+                           (user-error "Can't find documentation for %S" path))))))
     (org-link-set-parameters
      "kbd"
      :follow (lambda (ev)
@@ -553,12 +553,12 @@ relative to `org-directory', unless it is an absolute path."
      :face 'help-key-binding)
     (org-link-set-parameters
      "var"
-     :follow (-call-interactively #'helpful-variable)
+     :follow (-call-interactively #'describe-variable)
      :activate-func #'+org-link--var-link-activate-fn
      :face '(font-lock-variable-name-face underline))
     (org-link-set-parameters
      "fn"
-     :follow (-call-interactively #'helpful-callable)
+     :follow (-call-interactively #'describe-function)
      :activate-func #'+org-link--fn-link-activate-fn
      :face '(font-lock-function-name-face underline))
     (org-link-set-parameters
@@ -739,9 +739,6 @@ mutating hooks on exported output, like formatters."
   (add-to-list 'org-file-apps '(directory . emacs))
   (add-to-list 'org-file-apps '(remote . emacs))
 
-  ;; Open help:* links with helpful-* instead of describe-*
-  (advice-add #'org-link--open-help :around #'doom-use-helpful-a)
-
   ;; Some uses of `org-fix-tags-on-the-fly' occur without a check on
   ;; `org-auto-align-tags', such as in `org-self-insert-command' and
   ;; `org-delete-backward-char'.
@@ -790,30 +787,26 @@ via an indirect buffer."
 
   (defvar recentf-exclude)
   (defadvice! +org--optimize-backgrounded-agenda-buffers-a (fn file)
-    "Disable a lot of org-mode's startup processes for temporary agenda buffers.
+    "Disable `org-mode's startup processes for temporary agenda buffers.
 
-    This includes preventing them from polluting recentf.
-
-    However, if the user tries to visit one of these buffers they'll see a
-    gimped, half-broken org buffer. To avoid that, install a hook to restart
-    `org-mode' when they're switched to so they can grow up to be fully-fledged
-    org-mode buffers."
+Prevents recentf pollution as well. However, if the user tries to visit one of
+these buffers they'll see a gimped, half-broken org buffer, so to avoid that,
+install a hook to restart `org-mode' when they're switched to so they can grow
+up to be fully-fledged org-mode buffers."
     :around #'org-get-agenda-file-buffer
     (if-let (buf (org-find-base-buffer-visiting file))
         buf
-      (let ((recentf-exclude (list (lambda (_file) t)))
+      (let ((recentf-exclude '(always))
             (doom-inhibit-large-file-detection t)
-            org-startup-indented
-            org-startup-folded
+            (doom-inhibit-local-var-hooks t)
+            (org-inhibit-startup t)
             vc-handled-backends
-            org-mode-hook
             enable-local-variables
             find-file-hook)
-        (let ((buf (funcall fn file)))
-          (when buf
-            (with-current-buffer buf
-              (add-hook 'doom-switch-buffer-hook #'+org--restart-mode-h
-                        nil 'local)))
+        (when-let ((buf (delay-mode-hooks (funcall fn file))))
+          (with-current-buffer buf
+            (add-hook 'doom-switch-buffer-hook #'+org--restart-mode-h
+                      nil 'local))
           buf))))
 
   (defadvice! +org--fix-inconsistent-uuidgen-case-a (uuid)
@@ -868,9 +861,6 @@ between the two."
         ;; Org-aware C-a/C-e
         [remap doom/backward-to-bol-or-indent]          #'org-beginning-of-line
         [remap doom/forward-to-last-non-comment-or-eol] #'org-end-of-line
-
-        (:when (modulep! :completion vertico)
-          [remap imenu] #'consult-outline)
 
         :localleader
         "#" #'org-update-statistics-cookies
@@ -1207,22 +1197,26 @@ between the two."
       (map! :map evil-org-mode-map
             :ni [C-return]   #'+org/insert-item-below
             :ni [C-S-return] #'+org/insert-item-above
-            ;; navigate table cells (from insert-mode)
-            :i Cright (cmds! (org-at-table-p) #'org-table-next-field
-                             #'org-end-of-line)
-            :i Cleft  (cmds! (org-at-table-p) #'org-table-previous-field
-                             #'org-beginning-of-line)
-            :i Cup    (cmds! (org-at-table-p) #'+org/table-previous-row
-                             #'org-up-element)
-            :i Cdown  (cmds! (org-at-table-p) #'org-table-next-row
-                             #'org-down-element)
-            :ni CSright   #'org-shiftright
-            :ni CSleft    #'org-shiftleft
-            :ni CSup      #'org-shiftup
-            :ni CSdown    #'org-shiftdown
+            (:unless evil-disable-insert-state-bindings
+             :i Cright (cmds! (org-at-table-p) #'org-table-next-field
+                              #'org-end-of-line)
+             :i Cleft  (cmds! (org-at-table-p) #'org-table-previous-field
+                              #'org-beginning-of-line)
+             :i Cup    (cmds! (org-at-table-p) #'+org/table-previous-row
+                              #'org-up-element)
+             :i Cdown  (cmds! (org-at-table-p) #'org-table-next-row
+                              #'org-down-element)
+             :i CSright   #'org-shiftright
+             :i CSleft    #'org-shiftleft
+             :i CSup      #'org-shiftup
+             :i CSdown    #'org-shiftdown)
+            :n CSright    #'org-shiftright
+            :n CSleft     #'org-shiftleft
+            :n CSup       #'org-shiftup
+            :n CSdown     #'org-shiftdown
             ;; more intuitive RET keybinds
-            :n [return]   #'+org/dwim-at-point
-            :n "RET"      #'+org/dwim-at-point
+            :m [return]   #'+org/dwim-at-point
+            :m "RET"      #'+org/dwim-at-point
             :i [return]   #'+org/return
             :i "RET"      #'+org/return
             :i [S-return] #'+org/shift-return

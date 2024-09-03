@@ -59,7 +59,14 @@ Fixes #3939: unsortable dired entries on Windows."
     (not (eq revert-buffer-function #'dired-virtual-revert)))
 
   ;; To be consistent with vertico/ivy/helm+wgrep integration
-  (define-key dired-mode-map (kbd "C-c C-e") #'wdired-change-to-wdired-mode))
+  (define-key dired-mode-map (kbd "C-c C-e") #'wdired-change-to-wdired-mode)
+
+  ;; On ESC, abort `wdired-mode' (will prompt)
+  (add-hook! 'doom-escape-hook
+    (defun +dired-wdired-exit-h ()
+      (when (eq major-mode 'wdired-mode)
+        (wdired-exit)
+        t))))
 
 
 (use-package! dirvish
@@ -99,7 +106,19 @@ Fixes #3939: unsortable dired entries on Windows."
                 dirvish-header-line-height height)))))
 
   (when (modulep! :ui vc-gutter)
-    (push 'vc-state dirvish-attributes))
+    ;; HACK: Dirvish sets up the fringes for vc-state late in the startup
+    ;;   process, causing this jarring pop-in effect. This advice sets them up
+    ;;   sooner to avoid this.
+    ;; REVIEW: Upstream this later.
+    (defadvice! +dired--init-fringes-a (_dir _buffer setup)
+      :before #'dirvish-data-for-dir
+      (when (and setup (memq 'vc-state dirvish-attributes))
+        (set-window-fringes nil 5 1)))
+    ;; The vc-gutter module uses `diff-hl-dired-mode' + `diff-hl-margin-mode'
+    ;; for diffs in dirvish buffers. `vc-state' uses overlays, so they won't be
+    ;; visible in the terminal.
+    (when (or (daemonp) (display-graphic-p))
+      (push 'vc-state dirvish-attributes)))
 
   (when (modulep! +icons)
     (setq dirvish-subtree-always-show-state t)
@@ -188,13 +207,18 @@ Fixes #3939: unsortable dired entries on Windows."
 
   ;; HACK: Kill Dirvish session before switching projects/workspaces, otherwise
   ;;   it errors out on trying to delete/change dedicated windows.
-  (add-hook! '(persp-before-kill-functions projectile-before-switch-project-hook)
+  (add-hook! '(persp-before-kill-functions
+               persp-before-switch-functions
+               projectile-before-switch-project-hook)
     (defun +dired--cleanup-dirvish-h (&rest _)
-      (when-let ((win
-                  (or (and (featurep 'dirvish-side)
-                           (dirvish-side--session-visible-p))
-                      (and dirvish--this (selected-window)))))
-        (delete-window win))))
+      (when-let ((dv (cl-loop for w in (window-list)
+                              if (or (window-parameter w 'window-side)
+                                     (window-dedicated-p w))
+                              if (with-current-buffer (window-buffer w) (dirvish-curr))
+                              return it)))
+        (let (dirvish-reuse-session)
+          (with-selected-window (dv-root-window dv)
+            (dirvish-quit))))))
 
   ;; HACK: If a directory has a .dir-locals.el, its settings could
   ;;   interfere/crash Dirvish trying to preview it.

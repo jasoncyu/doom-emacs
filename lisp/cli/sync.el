@@ -73,12 +73,14 @@ OPTIONS:
         ;; recompiled. This is necessary because Emacs byte-code is not
         ;; necessarily back/forward compatible across major versions, and many
         ;; packages bake in hardcoded data at compile-time.
-        (pcase-let ((`(,old-version . ,old-host) (doom-file-read doom-cli-sync-info-file :by 'read :noerror t))
+        (pcase-let ((`(,old-version . ,hash)
+                     (doom-file-read doom-cli-sync-info-file :by 'read :noerror t))
                     (to-rebuild nil))
           (when (and old-version (not (equal old-version emacs-version)))
             (print! (warn "Emacs version has changed since last sync (from %s to %s)") old-version emacs-version)
             (setq to-rebuild t))
-          (when (and old-host (not (equal old-host (system-name))))
+          (when (and (stringp hash)
+                     (not (equal hash (doom-sync--system-hash))))
             (print! (warn "Your system has changed since last sync"))
             (setq to-rebuild t))
           (when (and to-rebuild (not rebuild?) (not (doom-cli-context-suppress-prompts-p context)))
@@ -101,13 +103,29 @@ OPTIONS:
           (run-hooks 'doom-after-sync-hook))
         (when (or rebuild? (not (file-exists-p doom-cli-sync-info-file)))
           (with-temp-file doom-cli-sync-info-file
-            (prin1 (cons emacs-version (system-name)) (current-buffer))))
+            (prin1 (cons emacs-version (doom-sync--system-hash))
+                   (current-buffer))))
         t)
     (remove-hook 'kill-emacs-hook #'doom-sync--abort-warning-h)))
 
 
 ;;
 ;;; Helpers
+
+(defun doom-sync--system-hash ()
+  (secure-hash
+   'md5 (mapconcat
+         #'identity
+         (list
+          ;; Changes to this path could indicate a change to the username and/or
+          ;; the location of Straight's build artifacts; both warrant a rebuild
+          ;; of your packages.
+          doom-local-dir
+          ;; Changes to this indicate the user's system/OS has changed (e.g. if
+          ;; the user copied their config to another system, on another OS) or
+          ;; Emacs' compiled features have (even if the major version hasn't).
+          system-configuration)
+         "")))
 
 (defun doom-sync--abort-warning-h ()
   (print! (warn "Script was abruptly aborted, leaving Doom in an incomplete state!"))

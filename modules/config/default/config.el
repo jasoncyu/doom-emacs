@@ -466,28 +466,21 @@ Continues comments if executed from a commented line."
   (let ((cmds-del
          `(menu-item "Reset completion" corfu-reset
            :filter ,(lambda (cmd)
-                      (cond
-                       ((and (>= corfu--index 0)
-                             (eq corfu-preview-current 'insert))
-                        cmd)))))
+                      (when (and (>= corfu--index 0)
+                                 (eq corfu-preview-current 'insert))
+                        cmd))))
         (cmds-ret
          `(menu-item "Insert completion DWIM" corfu-insert
            :filter ,(lambda (cmd)
-                      (cond
-                       ((null +corfu-want-ret-to-confirm)
-                        (corfu-quit)
-                        nil)
-                       ((eq +corfu-want-ret-to-confirm 'minibuffer)
-                        (funcall-interactively cmd)
-                        nil)
-                       ((and (or (not (minibufferp nil t))
-                                 (eq +corfu-want-ret-to-confirm t))
-                             (>= corfu--index 0))
-                        cmd)
-                       ((or (not (minibufferp nil t))
-                            (eq +corfu-want-ret-to-confirm t))
-                        nil)
-                       (t cmd)))))
+                      (pcase +corfu-want-ret-to-confirm
+                        ('nil (corfu-quit) nil)
+                        ('t (if (>= corfu--index 0) cmd))
+                        ('both (funcall-interactively cmd) nil)
+                        ('minibuffer
+                         (if (minibufferp nil t)
+                             (ignore (funcall-interactively cmd))  ; 'both' behavior
+                           (if (>= corfu--index 0) cmd)))  ; 't' behavior
+                        (_ cmd)))))
         (cmds-tab
          `(menu-item "Select next candidate or expand/traverse snippet" corfu-next
            :filter (lambda (cmd)
@@ -505,7 +498,7 @@ Continues comments if executed from a commented line."
                                   (featurep 'org)
                                   (org-at-table-p))
                              #'org-table-next-field)))
-                      (t cmd)))) )
+                      (t cmd)))))
         (cmds-s-tab
          `(menu-item "Select previous candidate or expand/traverse snippet"
            corfu-previous
@@ -572,6 +565,42 @@ Continues comments if executed from a commented line."
 ;;
 ;;; Bootstrap configs
 
-(if (featurep 'evil)
-    (load! "+evil")
-  (load! "+emacs"))
+(cond
+ ((modulep! :editor evil)
+  (defun +default-disable-delete-selection-mode-h ()
+    (delete-selection-mode -1))
+  (add-hook 'evil-insert-state-entry-hook #'delete-selection-mode)
+  (add-hook 'evil-insert-state-exit-hook  #'+default-disable-delete-selection-mode-h)
+
+  ;; Make SPC u SPC u [...] possible (#747)
+  (map! :map universal-argument-map
+        :prefix doom-leader-key     "u" #'universal-argument-more
+        :prefix doom-leader-alt-key "u" #'universal-argument-more)
+
+  (when (modulep! +bindings)
+    (load! "+evil-bindings")))
+
+ (t
+  (add-hook 'doom-first-buffer-hook #'delete-selection-mode)
+  (setq shift-select-mode t)
+
+  (use-package! drag-stuff
+    :defer t
+    :init
+    (map! "<M-up>"    #'drag-stuff-up
+          "<M-down>"  #'drag-stuff-down
+          "<M-left>"  #'drag-stuff-left
+          "<M-right>" #'drag-stuff-right))
+
+  (use-package! expand-region
+    :commands (er/contract-region er/mark-symbol er/mark-word)
+    :config
+    (defadvice! doom--quit-expand-region-a (&rest _)
+      "Properly abort an expand-region region."
+      :before '(evil-escape doom/escape)
+      (when (memq last-command '(er/expand-region er/contract-region))
+        (er/contract-region 0))))
+
+  (when (modulep! +bindings)
+    (require 'projectile nil t) ; we need its keybinds immediately
+    (load! "+emacs-bindings"))))
