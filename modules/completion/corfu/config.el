@@ -53,6 +53,7 @@ If any return non-nil, `corfu-auto' will not invoke as-you-type completion.")
         corfu-cycle t
         ;; Keep at prompt rather than first: That way if you press enter it's
         ;; always what you typed and not
+        ;; Keep at first: Matches other editor behavior
         corfu-preselect 'prompt
         corfu-count 16
         corfu-max-width 120
