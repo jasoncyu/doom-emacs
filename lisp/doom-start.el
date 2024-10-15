@@ -52,12 +52,6 @@
 ;; quickly self-correct.
 (setq fast-but-imprecise-scrolling t)
 
-;; Don't ping things that look like domain names.
-(setq ffap-machine-p-known 'reject)
-
-;; Emacs "updates" its ui more often than it needs to, so slow it down slightly
-(setq idle-update-delay 1.0)  ; default is 0.5
-
 ;; Font compacting can be terribly expensive, especially for rendering icon
 ;; fonts on Windows. Whether disabling it has a notable affect on Linux and Mac
 ;; hasn't been determined, but do it anyway, just in case. This increases memory
@@ -147,11 +141,6 @@
 ;; Emacs to its own devices there.
 (unless doom--system-windows-p
   (setq selection-coding-system 'utf-8))
-
-
-;;; Support for Doom-specific file extensions
-(add-to-list 'auto-mode-alist '("/\\.doom\\(?:project\\|module\\|profile\\)\\'" . lisp-data-mode))
-(add-to-list 'auto-mode-alist '("/\\.doomrc\\'" . emacs-lisp-mode))
 
 
 ;;
@@ -345,9 +334,8 @@ If RETURN-P, return the message as a string instead of displaying it."
 ;; TODO: Catch errors
 (load! (string-remove-suffix ".el" doom-module-init-file) doom-user-dir t)
 
-;;; Load the rest of $DOOMDIR + modules if noninteractive
 ;; If the user is loading this file from a batch script, let's assume they want
-;; to load their userland config as well.
+;; to load their userland config immediately.
 (when noninteractive
   (doom-require 'doom-profiles)
   (let ((init-file (doom-profile-init-file)))
@@ -358,6 +346,7 @@ If RETURN-P, return the message as a string instead of displaying it."
       ;; Loads modules, then $DOOMDIR/config.el
       (doom-load init-file 'noerror)
       (doom-initialize-packages))))
+
 
 ;;; Entry point
 ;; HACK: This advice hijacks Emacs' initfile loader to accomplish the following:

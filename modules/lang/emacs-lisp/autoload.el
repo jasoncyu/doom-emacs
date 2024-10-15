@@ -95,6 +95,15 @@ Intended to replace `lisp-outline-level'."
       (doom/help-modules (car module) (cadr module) 'visit-dir)
     (call-interactively #'elisp-def)))
 
+(defun +emacs-lisp--describe-symbol (symbol)
+  (if (or (not (fboundp 'helpful-symbol))
+          (cl-some (lambda (x) (funcall (nth 1 x) symbol))
+                   describe-symbol-backends))
+      (progn
+        (describe-symbol symbol)
+        (pop-to-buffer (help-buffer)))
+    (helpful-symbol symbol)))
+
 ;;;###autoload
 (defun +emacs-lisp-lookup-documentation (thing)
   "Lookup THING with `helpful-variable' if it's a variable, `helpful-callable'
@@ -117,9 +126,12 @@ if it's callable, `apropos' otherwise."
                  (org-show-hidden-entry))))
            'deferred))
         (thing
-         (funcall (or (command-remapping #'describe-symbol)
-                      #'describe-symbol)
-                  (intern thing)))
+         (let ((thing (intern thing)))
+           (if (and (not (cl-find-class thing))
+                    (fboundp 'helpful-symbol))
+               (helpful-symbol thing)
+             (describe-symbol thing)
+             (pop-to-buffer (help-buffer)))))
         ((call-interactively
           (if (fboundp #'helpful-at-point)
               #'helpful-at-point
@@ -669,7 +681,6 @@ Adapted from URL `https://www.reddit.com/r/emacs/comments/d7x7x8/finally_fixing_
 ;;   performance sensitive, so we compile this file on-demand, at least, until
 ;;   Doom adds a formal compile step to 'doom sync'.
 (doom-compile-functions #'+emacs-lisp-highlight-vars-and-faces
-                        #'+emacs-lisp-truncate-pin
                         #'+emacs-lisp--calculate-lisp-indent-a)
 
 ;;; autoload.el ends here

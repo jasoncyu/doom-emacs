@@ -10,6 +10,7 @@
   `(;; Doom variables
     (doom-print-minimum-level . debug)
     (doom-inhibit-log . nil)
+    (doom-log-level . 2)
 
     ;; Emacs variables
     async-debug
@@ -198,13 +199,15 @@ Activate this advice with:
 -q or -Q, for example:
 
   emacs -Q -l init.el -f doom-run-all-startup-hooks-h"
-  (setq after-init-time (current-time))
+  (setq after-init-time (current-time)
+        doom-init-time (current-time))
   (let ((inhibit-startup-hooks nil))
     (doom-run-hooks 'after-init-hook
                     'delayed-warnings-hook
                     'emacs-startup-hook
                     'tty-setup-hook
-                    'window-setup-hook)))
+                    'window-setup-hook
+                    'doom-after-init-hook)))
 
 
 ;;

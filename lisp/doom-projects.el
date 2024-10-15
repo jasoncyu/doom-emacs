@@ -183,7 +183,7 @@ And if it's a function, evaluate it."
   (put 'projectile-git-submodule-command 'initial-value projectile-git-submodule-command)
   (setq projectile-git-submodule-command nil
         ;; Include and follow symlinks in file listings.
-        projectile-git-fd-args (concat "-L -tl " projectile-git-fd-args)
+        projectile-git-fd-args (concat "-tl " projectile-git-fd-args)
         projectile-indexing-method 'hybrid
         projectile-generic-command
         (lambda (_)
@@ -247,7 +247,12 @@ the command instead."
     (projectile-mode +1)
     ;; HACK: See bbatsov/projectile@3c92d28c056c
     (remove-hook 'buffer-list-update-hook #'projectile-track-known-projects-find-file-hook)
-    (add-hook 'doom-switch-buffer-hook #'projectile-track-known-projects-find-file-hook t)))
+    (add-hook 'doom-switch-buffer-hook #'projectile-track-known-projects-find-file-hook t)
+    (add-hook! 'dired-after-readin-hook
+      (defun doom-project-track-known-project-h ()
+        (when projectile-mode
+          (setq projectile-project-root-cache (make-hash-table :test 'equal))
+          (projectile-track-known-projects-find-file-hook))))))
 
 
 ;;

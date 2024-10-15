@@ -249,6 +249,10 @@
        (:when (modulep! :ui treemacs)
         :desc "Project sidebar"               "p" #'+treemacs/toggle
         :desc "Find file in project rsidebar" "P" #'treemacs-find-file)
+       (:when (modulep! :emacs dired +dirvish)
+        :desc "Open directory in dirvish"     "/" #'dirvish
+        :desc "Project sidebar"               "p" #'dirvish-side
+        :desc "Find file in project sidebar"  "P" #'+dired/dirvish-side-and-follow)
        (:when (modulep! :term shell)
         :desc "Toggle shell popup"            "t" #'+shell/toggle
         :desc "Open shell here"               "T" #'+shell/here)
@@ -334,7 +338,7 @@
        (:when (modulep! :checkers syntax)
         :desc "Flycheck"                   "f" #'flycheck-mode)
        (:when (modulep! :ui indent-guides)
-        :desc "Indent guides"              "i" #'highlight-indent-guides-mode)
+        :desc "Indent guides"              "i" #'indent-bars-mode)
        (:when (modulep! :ui minimap)
         :desc "Minimap mode"               "m" #'minimap-mode)
        (:when (modulep! :lang org +present)

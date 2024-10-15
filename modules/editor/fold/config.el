@@ -38,9 +38,6 @@ this."
 (after! org
   (setq org-ellipsis +fold-ellipsis))
 
-(after! mule-util
-  (setq truncate-string-ellipsis +fold-ellipsis))
-
 
 ;;
 ;;; Packages
@@ -59,8 +56,7 @@ this."
   (defadvice! +fold--hideshow-ensure-mode-a (&rest _)
     "Ensure `hs-minor-mode' is enabled when we need it, no sooner or later."
     :before '(hs-toggle-hiding hs-hide-block hs-hide-level hs-show-all hs-hide-all)
-    (unless (bound-and-true-p hs-minor-mode)
-      (hs-minor-mode +1)))
+    (+fold--ensure-hideshow-mode))
 
   ;; extra folding support for more languages
   (unless (assq 't hs-special-modes-alist)

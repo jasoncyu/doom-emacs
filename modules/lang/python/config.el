@@ -196,8 +196,8 @@
         "a" #'python-pytest
         "f" #'python-pytest-file-dwim
         "F" #'python-pytest-file
-        "t" #'python-pytest-function-dwim
-        "T" #'python-pytest-function
+        "t" #'python-pytest-run-def-or-class-at-point-dwim
+        "T" #'python-pytest-run-def-or-class-at-point
         "r" #'python-pytest-repeat
         "p" #'python-pytest-dispatch))
 
@@ -288,7 +288,7 @@
   ;; explicitly. Afterwards, run M-x `conda-env-activate' to switch between
   ;; environments
   (or (cl-loop for dir in (cons conda-anaconda-home conda-home-candidates)
-               if (file-directory-p dir)
+               if (and dir (file-directory-p dir))
                return (setq conda-anaconda-home (expand-file-name dir)
                             conda-env-home-directory (expand-file-name dir)))
       (message "Cannot find Anaconda installation"))
@@ -353,4 +353,7 @@
   :when (modulep! +lsp)
   :when (modulep! +pyright)
   :when (not (modulep! :tools lsp +eglot))
-  :after lsp-mode)
+  :defer t
+  :init
+  (when-let ((exe (executable-find "basedpyright")))
+    (setq lsp-pyright-langserver-command exe)))

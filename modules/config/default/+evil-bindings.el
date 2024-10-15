@@ -49,7 +49,8 @@
                '(((memq (bound-and-true-p yas--active-field-overlay)
                         (overlays-in (1- (point)) (1+ (point))))
                   #'yas-next-field-or-maybe-expand)
-                 ((yas-maybe-expand-abbrev-key-filter 'yas-expand)
+                 ((and (bound-and-true-p yas-minor-mode)
+                       (yas-maybe-expand-abbrev-key-filter 'yas-expand))
                   #'yas-expand)))
            ,@(when (modulep! :completion company +tng)
                '(((bound-and-true-p company-mode)
@@ -511,12 +512,11 @@
        :desc "Copy link to homepage"       "Y"   #'+vc/browse-at-remote-kill-homepage
        :desc "Git time machine"            "t"   #'git-timemachine-toggle
        (:when (modulep! :ui vc-gutter)
-         :desc "Revert hunk at point"      "r"   #'+vc-gutter/revert-hunk
-         :desc "stage hunk at point"       "s"   #'+vc-gutter/stage-hunk
-         :desc "Jump to next hunk"         "]"   #'+vc-gutter/next-hunk
-         :desc "Jump to previous hunk" "[" #'+vc-gutter/previous-hunk
-         :desc "show hunk" "*" #'diff-hl-show-hunk
-         )
+        :desc "Revert hunk at point"      "r"   #'+vc-gutter/save-and-revert-hunk
+        :desc "Stage hunk at point"       "s"   #'+vc-gutter/stage-hunk
+        :desc "Jump to next hunk"         "]"   #'+vc-gutter/next-hunk
+        :desc "Jump to previous hunk"     "["   #'+vc-gutter/previous-hunk)
+        :desc "show hunk" "*" #'diff-hl-show-hunk
        (:when (modulep! :tools magit)
         :desc "Magit dispatch"            "/"   #'magit-dispatch
         :desc "Magit file dispatch"       "."   #'magit-file-dispatch
@@ -699,6 +699,10 @@
        (:when (modulep! :ui treemacs)
         :desc "Project sidebar" "p" #'+treemacs/toggle
         :desc "Find file in project sidebar" "P" #'treemacs-find-file)
+       (:when (modulep! :emacs dired +dirvish)
+        :desc "Open directory in dirvish"    "/" #'dirvish
+        :desc "Project sidebar"              "p" #'dirvish-side
+        :desc "Find file in project sidebar" "P" #'+dired/dirvish-side-and-follow)
        (:when (modulep! :term shell)
         :desc "Toggle shell popup"    "t" #'+shell/toggle
         :desc "Open shell here"       "T" #'+shell/here)
@@ -848,7 +852,7 @@
        :desc "Frame fullscreen"             "F" #'toggle-frame-fullscreen
        :desc "Evil goggles"                 "g" #'evil-goggles-mode
        (:when (modulep! :ui indent-guides)
-        :desc "Indent guides"              "i" #'highlight-indent-guides-mode)
+        :desc "Indent guides"              "i" #'indent-bars-mode)
        :desc "Indent style"                 "I" #'doom/toggle-indent-style
        :desc "Line numbers"                 "l" #'doom/toggle-line-numbers
        (:when (modulep! :ui minimap)
