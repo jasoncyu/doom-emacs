@@ -511,10 +511,12 @@
        :desc "Copy link to homepage"       "Y"   #'+vc/browse-at-remote-kill-homepage
        :desc "Git time machine"            "t"   #'git-timemachine-toggle
        (:when (modulep! :ui vc-gutter)
-        :desc "Revert hunk at point"      "r"   #'+vc-gutter/revert-hunk
-        :desc "stage hunk at point"       "s"   #'+vc-gutter/stage-hunk
-        :desc "Jump to next hunk"         "]"   #'+vc-gutter/next-hunk
-        :desc "Jump to previous hunk"     "["   #'+vc-gutter/previous-hunk)
+         :desc "Revert hunk at point"      "r"   #'+vc-gutter/revert-hunk
+         :desc "stage hunk at point"       "s"   #'+vc-gutter/stage-hunk
+         :desc "Jump to next hunk"         "]"   #'+vc-gutter/next-hunk
+         :desc "Jump to previous hunk" "[" #'+vc-gutter/previous-hunk
+         :desc "show hunk" "*" #'diff-hl-show-hunk
+         )
        (:when (modulep! :tools magit)
         :desc "Magit dispatch"            "/"   #'magit-dispatch
         :desc "Magit file dispatch"       "."   #'magit-file-dispatch
