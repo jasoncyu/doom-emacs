@@ -144,7 +144,7 @@ MATCH is a string regexp. Only entries that match it will be included."
       result)))
 
 ;;;###autoload
-(defun doom-file-cookie-p (file &optional cookie null-value)
+(defun doom-file-cookie (file &optional cookie null-value)
   "Returns the evaluated result of FORM in a ;;;###COOKIE FORM at the top of
 FILE.
 
@@ -158,10 +158,23 @@ return NULL-VALUE."
     (insert-file-contents file nil 0 256)
     (if (re-search-forward (format "^;;;###%s " (regexp-quote (or cookie "if")))
                            nil t)
-        (doom-module-context-with (doom-module-from-path file)
-          (let ((load-file-name file))
-            (eval (sexp-at-point) t)))
+        (sexp-at-point)
       null-value)))
+
+;;;###autoload
+(defun doom-file-cookie-p (file &optional cookie null-value)
+  "Returns the evaluated result of FORM in a ;;;###COOKIE FORM at the top of
+FILE.
+
+If COOKIE doesn't exist, or cookie isn't within the first 256 bytes of FILE,
+return NULL-VALUE."
+  (let ((sexp (doom-file-cookie file cookie null-value)))
+    (if (equal sexp null-value)
+        null-value
+      (with-temp-buffer
+        (with-doom-module (doom-module-from-path file)
+          (let ((load-file-name file))
+            (eval (doom-file-cookie file cookie null-value) t)))))))
 
 ;;;###autoload
 (defmacro file-exists-p! (files &optional directory)
@@ -478,7 +491,7 @@ If FORCE-P, overwrite the destination file if it exists, without confirmation."
   (let ((host (or (file-remote-p file 'host) "localhost")))
     (concat "/" (when (file-remote-p file)
                   (concat (file-remote-p file 'method) ":"
-                          (if-let (user (file-remote-p file 'user))
+                          (if-let* ((user (file-remote-p file 'user)))
                               (concat user "@" host)
                             host)
                           "|"))
@@ -548,7 +561,7 @@ which case it will save it without prompting."
   "Save this file as root."
   (interactive)
   (let ((file (doom--sudo-file-path (buffer-file-name (buffer-base-buffer)))))
-    (if-let (buffer (find-file-noselect file))
+    (if-let* ((buffer (find-file-noselect file)))
         (let ((origin (current-buffer)))
           (copy-to-buffer buffer (point-min) (point-max))
           (unwind-protect

@@ -12,7 +12,6 @@
   :hook (zig-mode . rainbow-delimiters-mode)
   :config
   (setq zig-format-on-save nil) ; rely on :editor format instead
-  (set-formatter! 'zigfmt '("zig" "fmt" "--stdin") :modes '(zig-mode))
 
   (when (modulep! +lsp)
     (add-hook 'zig-mode-local-vars-hook #'lsp! 'append))
@@ -20,8 +19,7 @@
   (when (modulep! +tree-sitter)
     (add-hook 'zig-mode-local-vars-hook #'tree-sitter! 'append))
 
-  (when (and (modulep! :checkers syntax)
-             (not (modulep! :checkers syntax +flymake)))
+  (when (modulep! :checkers syntax -flymake)
     (eval '(flycheck-define-checker zig
              "A zig syntax checker using zig's `ast-check` command."
              :command ("zig" "ast-check" (eval (buffer-file-name)))

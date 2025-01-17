@@ -1,4 +1,5 @@
 ;;; editor/evil/init.el -*- lexical-binding: t; -*-
+;;;###if (modulep! +everywhere)
 
 (defvar evil-collection-key-blacklist)
 
@@ -22,9 +23,7 @@
 ;;    disable modules, and to reduce the effort required to maintain our copy of
 ;;    `evil-collection-list' (now I can just copy it from time to time).
 
-(when (and (not noninteractive)
-           (not (doom-context-p 'reload))
-           (modulep! +everywhere))
+(unless (or noninteractive (doom-context-p 'reload))
 
   (setq evil-collection-company-use-tng (modulep! :completion company +tng))
 
@@ -105,6 +104,7 @@ variable for an explanation of the defaults (in comments). See
       calc
       calendar
       cider
+      citre
       cmake-mode
       color-rg
       comint
@@ -168,6 +168,7 @@ variable for an explanation of the defaults (in comments). See
       gited
       gnus
       go-mode
+      gptel
       grep
       guix
       hackernews
@@ -227,6 +228,7 @@ variable for an explanation of the defaults (in comments). See
       proced
       prodigy
       profiler
+      p-search
       python
       quickrun
       racer
@@ -250,6 +252,7 @@ variable for an explanation of the defaults (in comments). See
       simple-mpc
       slime
       sly
+      smerge-mode
       snake
       so-long
       speedbar
@@ -279,6 +282,7 @@ variable for an explanation of the defaults (in comments). See
       wdired
       wgrep
       which-key
+      with-editor
       woman
       xref
       xwidget

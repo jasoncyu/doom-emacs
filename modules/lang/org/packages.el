@@ -31,14 +31,14 @@
                          (format "(defun org-git-version (&rest _) \"%s-??-%s\")\n"
                                  version (cdr (doom-call-process "git" "rev-parse" "--short" "HEAD")))
                          "(provide 'org-version)\n")))))
-  :pin "6a5d0ed342efeb3a4c402672fbe9bfebd80af8b6")  ; release_9.7.11
+  :pin "5a4686915e568ace469f490c0606d2a016c1101c")  ; release_9.7.19
 (package! org-contrib
   :recipe (:host github
            :repo "emacsmirror/org-contrib")
-  :pin "ccd4212866fb1be70d1f15a41264c45a281901ad")
+  :pin "f22bdd6a580953a10df1f218e65cf250ac0ae87c")
 
 (package! avy)
-(package! htmlize :pin "ed5e5b05fd260e8f161a488d56f10e7f6e01fb75")
+(package! htmlize :pin "8e3841c837b4b78bd72ad7f0436e919f39315a46")
 (package! ox-clip :pin "a549cc8e1747beb6b7e567ffac27e31ba45cb8e8")
 (package! toc-org :pin "6d3ae0fc47ce79b1ea06cabe21a3c596395409cd")
 (package! org-cliplink :pin "13e0940b65d22bec34e2de4bc8cba1412a7abfbc")
@@ -72,16 +72,16 @@
 (when (modulep! +brain)
   (package! org-brain :pin "2bad7732aae1a3051e2a14de2e30f970bbe43c25"))
 (when (modulep! +dragndrop)
-  (package! org-download :pin "19e166f0a8c539b4144cfbc614309d47a9b2a9b7"))
+  (package! org-download :pin "c8be2611786d1d8d666b7b4f73582de1093f25ac"))
 (when (modulep! +gnuplot)
   (package! gnuplot :pin "4c6b18f71ff7604e2640033207f5a882ddce78af")
   (package! gnuplot-mode :pin "601f6392986f0cba332c87678d31ae0d0a496ce7"))
 (when (modulep! +jupyter)
-  (package! jupyter :pin "f97f4b5d8c83e0b901020f835183dde8a2bf649e"))
+  (package! jupyter :pin "db8a9e233a010a61063f34220821ec76157a2d84"))
 (when (modulep! +journal)
   (package! org-journal :pin "17b34ce8df9649a73b715c13698220bde1628668"))
 (when (modulep! +noter)
-  (package! org-noter :pin "6f292d7f1efb11222c09f3a91c902ea6e4dbfa33"))
+  (package! org-noter :pin "691efc3ed4a2828d791a148e53851365c2eb380f"))
 (when (modulep! +pomodoro)
   (package! org-pomodoro :pin "3f5bcfb80d61556d35fc29e5ddb09750df962cc6"))
 (when (modulep! +pretty)
@@ -93,11 +93,11 @@
     :recipe (:host github :repo "anler/centered-window-mode")
     :pin "80965f6c6afe8d918481433984b493de72af5399")
   (package! org-tree-slide :pin "e2599a106a26ce5511095e23df4ea04be6687a8a")
-  (package! org-re-reveal :pin "91610ba9b010b05c52ae7ab77a7890851222db06")
+  (package! org-re-reveal :pin "ab1422c163df5bb241ffc8657c02ea76af241bbc")
   (package! revealjs
     :recipe (:host github :repo "hakimel/reveal.js"
              :files ("css" "dist" "js" "plugin"))
-    :pin "472535065c7525abf0cc9df51c66f19fd2d2204f"))
+    :pin "e15cf92ccddfefe5355203914d1dd728cdf560e0"))
 (cond
  ((modulep! +roam)
   (package! org-roam
@@ -108,7 +108,10 @@
     ;; FIXME A :recipe isn't strictly necessary, but without it, our package
     ;;       bumper fails to distinguish between org-roam v1 and v2.
     :recipe (:host github :repo "org-roam/org-roam")
-    :pin "0b9fcbc97b65b349826e63bad89ca121a08fd2be")))
+    :pin "cad3518788991623aa5621341471aef67108937d")
+  (when (< emacs-major-version 29)
+    ;; HACK: Needed until org-roam/org-roam#2485 is resolved.
+    (package! emacsql :pin "491105a01f58bf0b346cbc0254766c6800b229a2"))))
 
 ;;; Babel
 (package! ob-async :pin "9aac486073f5c356ada20e716571be33a350a982")
@@ -150,6 +153,6 @@
 (when (modulep! +hugo)
   (package! ox-hugo
     :recipe (:host github :repo "kaushalmodi/ox-hugo" :nonrecursive t)
-    :pin "c4156d9d383bf97853ba9e16271b7c4d5e697f49"))
+    :pin "98421a1298adc6d80ce21b3cb5c951af818b27bf"))
 (when (modulep! :lang rst)
   (package! ox-rst :pin "99fa790da55b57a3f2e9aa187493ba434a64250e"))

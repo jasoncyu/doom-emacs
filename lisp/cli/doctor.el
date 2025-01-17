@@ -86,22 +86,22 @@ in."
 
   (print! (start "Checking for Doom's prerequisites..."))
   (print-group!
-   (if (not (executable-find "git"))
-       (error! "Couldn't find git on your machine! Doom's package manager won't work.")
-     (save-match-data
-       (let* ((version
-               (cdr (doom-call-process "git" "version")))
-              (version
-               (and (string-match "git version \\([0-9]+\\(?:\\.[0-9]+\\)\\{2\\}\\)" version)
-                    (match-string 1 version))))
-         (if version
-             (when (version< version "2.23")
-               (error! "Git %s detected! Doom requires git 2.23 or newer!"
-                       version))
-           (warn! "Cannot determine Git version. Doom requires git 2.23 or newer!")))))
+    (if (not (executable-find "git"))
+        (error! "Couldn't find git on your machine! Doom's package manager won't work.")
+      (save-match-data
+        (let* ((version
+                (cdr (doom-call-process "git" "version")))
+               (version
+                (and (string-match "git version \\([0-9]+\\(?:\\.[0-9]+\\)\\{2\\}\\)" version)
+                     (match-string 1 version))))
+          (if version
+              (when (version< version "2.23")
+                (error! "Git %s detected! Doom requires git 2.23 or newer!"
+                        version))
+            (warn! "Cannot determine Git version. Doom requires git 2.23 or newer!")))))
 
-   (unless (executable-find "rg")
-     (error! "Couldn't find the `rg' binary; this a hard dependecy for Doom, file searches may not work at all")))
+    (unless (executable-find "rg")
+      (error! "Couldn't find the `rg' binary; this a hard dependecy for Doom, file searches may not work at all")))
 
   (print! (start "Checking for Emacs config conflicts..."))
   (print-group!
@@ -170,21 +170,19 @@ in."
 
   (print! (start "Checking for common environmental issues..."))
   (print-group!
-    (when (string-match-p "/fish$" shell-file-name)
-      (print! (warn "Detected Fish as your $SHELL"))
-      (explain! "Fish (and possibly other non-POSIX shells) is known to inject garbage "
-                "output into some of the child processes that Emacs spawns. Many Emacs "
-                "packages/utilities will choke on this output, causing unpredictable issues. "
-                "To get around this, either:\n\n"
-                "  - Add the following to $DOOMDIR/config.el:\n\n"
-                "    (setq shell-file-name (executable-find \"bash\"))\n\n"
-                "  - Or change your default shell to a POSIX shell (like bash or zsh) "
-                "    and explicitly configure your terminal apps to use the shell you "
-                "    want.\n\n"
-                "If you opt for option 1 and use one of Emacs' terminal emulators, you "
-                "will also need to configure them to use Fish, e.g.\n\n"
-                "  (setq-default vterm-shell (executable-find \"fish\"))\n\n"
-                "  (setq-default explicit-shell-file-name (executable-find \"fish\"))\n"))
+    (when (or (string-match-p "/fish$" shell-file-name)
+              (string-match-p "/nu\\(?:\\.exe\\)?$" shell-file-name))
+      (print! (warn "Detected a non-POSIX $SHELL"))
+      (explain! "Non-POSIX shells (particularly Fish and Nushell) can cause unpredictable issues "
+                "with any Emacs utilities that spawn child processes from shell commands (like "
+                "diff-hl and in-Emacs terminals). To get around this, configure Emacs to use a "
+                "POSIX shell internally, e.g.\n\n"
+                "  ;;; add to $DOOMDIR/config.el:\n"
+                "  (setq shell-file-name (executable-find \"bash\"))\n\n"
+                "Emacs' terminal emulators can be safely configured to use your original $SHELL:\n\n"
+                "  ;;; add to $DOOMDIR/config.el:\n"
+                (format "  (setq-default vterm-shell \"%s\")\n" shell-file-name)
+                (format "  (setq-default explicit-shell-file-name \"%s\")\n" shell-file-name)))
 
     (condition-case e
         (when (featurep :system 'windows)
@@ -237,7 +235,9 @@ in."
   (print! (start "Checking Doom Emacs..."))
   (condition-case-unless-debug ex
       (print-group!
-        (require 'doom-start)
+        (doom-initialize t)
+        (doom-startup)
+        (require 'straight)
 
         (print! (success "Initialized Doom Emacs %s") doom-version)
         (print!
@@ -317,18 +317,18 @@ in."
           (print! (start "Checking your enabled modules..."))
           (advice-add #'require :around #'doom-shut-up-a)
           (pcase-dolist (`(,group . ,name) (doom-module-list))
-            (doom-context-with 'doctor
+            (with-doom-context 'doctor
               (let (doom-local-errors
                     doom-local-warnings)
                 (let (doom-doctor--errors
                       doom-doctor--warnings)
                   (condition-case-unless-debug ex
-                      (doom-module-context-with (cons group name)
-                        (let ((doctor-file   (doom-module-expand-path group name "doctor.el"))
-                              (packages-file (doom-module-expand-path group name doom-module-packages-file)))
+                      (with-doom-module (cons group name)
+                        (let ((doctor-file   (doom-module-expand-path (cons group name) "doctor.el"))
+                              (packages-file (doom-module-expand-path (cons group name) doom-module-packages-file)))
                           (when packages-file
                             (cl-loop with doom-output-indent = 6
-                                     for name in (doom-context-with 'packages
+                                     for name in (with-doom-context 'package
                                                    (let* (doom-packages
                                                           doom-disabled-packages)
                                                      (load packages-file 'noerror 'nomessage)
