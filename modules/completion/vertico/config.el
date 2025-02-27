@@ -31,6 +31,10 @@ overrides `completion-styles' during company completion sessions.")
   (setq vertico-resize nil
         vertico-count 17
         vertico-cycle t)
+  ;; Emacs 28 and newer: Hide commands in M-x which do not work in the current
+  ;; mode.  Vertico commands are hidden in normal buffers. This setting is
+  ;; useful beyond Vertico.
+  (setq read-extended-command-predicate #'command-completion-default-include-p)
   (setq-default completion-in-region-function
                 (lambda (&rest args)
                   (apply (if vertico-mode
@@ -156,7 +160,7 @@ orderless."
    consult-ripgrep consult-git-grep consult-grep
    consult-bookmark consult-recent-file
    consult--source-recent-file consult--source-project-recent-file consult--source-bookmark
-   :preview-key "C-SPC")
+   :preview-key 'any)
   (when (modulep! :config default)
     (consult-customize
      +default/search-project +default/search-other-project
@@ -164,7 +168,7 @@ orderless."
      +default/search-cwd +default/search-other-cwd
      +default/search-notes-for-symbol-at-point
      +default/search-emacsd
-     :preview-key "C-SPC"))
+     :preview-key 'any))
   (consult-customize
    consult-theme
    :preview-key (list "C-SPC" :debounce 0.5 'any))
@@ -390,4 +394,10 @@ orderless."
                  (+vertico-transform-functions . +vertico-highlight-directory)))
   (add-to-list 'vertico-multiform-commands
                '(execute-extended-command
-                 (+vertico-transform-functions . +vertico-highlight-enabled-mode))))
+                 (+vertico-transform-functions . +vertico-highlight-enabled-mode)))
+  (add-to-list 'vertico-multiform-commands
+               '(org-set-effort
+                (vertico-sort-function . vertico-sort-alpha)))
+  (add-to-list 'vertico-multiform-commands
+               '(jason--clock-in-hook
+                (vertico-sort-function . vertico-sort-alpha))))
