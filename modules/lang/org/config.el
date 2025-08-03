@@ -825,14 +825,15 @@ between the two."
         "S-RET"      #'+org/shift-return
         "C-RET"      #'+org/insert-item-below
         "C-S-RET"    #'+org/insert-item-above
-        "C-M-RET"    #'org-insert-subheading
+        "C-M-RET"    (cmd!! #'org-insert-todo-subheading '(4))
         [C-return]   #'+org/insert-item-below
         [C-S-return] #'+org/insert-item-above
-        [C-M-return] #'org-insert-subheading
+        [C-M-return] (cmd!! #'org-insert-todo-subheading '(4))
         (:when (featurep :system 'macos)
          [s-return]   #'+org/insert-item-below
          [s-S-return] #'+org/insert-item-above
-         [s-M-return] #'org-insert-subheading)
+         ;; 4: forces TODO rather than keep prv subheading keyword
+         [s-M-return] (cmd!! #'org-insert-subheading '(4)))
         ;; Org-aware C-a/C-e
         [remap doom/backward-to-bol-or-indent]          #'org-beginning-of-line
         [remap doom/forward-to-last-non-comment-or-eol] #'org-end-of-line
@@ -951,6 +952,7 @@ between the two."
         (:prefix ("l" . "links")
          "c" #'org-cliplink
          "d" #'+org/remove-link
+         "D" #'+org/delete-link-and-file
          "i" #'org-id-store-link
          "l" #'org-insert-link
          "L" #'org-insert-all-links
@@ -986,6 +988,7 @@ between the two."
          "k" #'org-move-subtree-up
          "l" #'org-demote-subtree
          "n" #'org-narrow-to-subtree
+         "p" #'org-paste-subtree
          "r" #'org-refile
          "s" #'org-sparse-tree
          "A" #'org-archive-subtree-default

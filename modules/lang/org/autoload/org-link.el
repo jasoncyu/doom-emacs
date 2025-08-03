@@ -411,6 +411,42 @@ exist, and `org-link' otherwise."
       (insert label))))
 
 ;;;###autoload
+(defun +org/delete-link-and-file ()
+  "Delete the link at point and its associated file."
+  (interactive)
+  (unless (org-in-regexp org-link-bracket-re 1)
+    (user-error "No link at point"))
+  (let* ((link (org-link-unescape (match-string-no-properties 1)))
+         (type (and (string-match org-link-plain-re link)
+                    (match-string 1 link)))
+         (path (and (string-match org-link-plain-re link)
+                    (match-string 2 link)))
+         (file-path (cond
+                     ;; Handle file: links
+                     ((or (string= type "file") (string= type "lc") )
+                      (expand-file-name path))
+                     ;; Handle attachment: links
+                     ((string= type "attachment")
+                      (when (featurep 'org-attach)
+                        (org-attach-expand path)))
+                     ;; Handle relative file paths (no protocol)
+                     ((and (not type) (file-exists-p (expand-file-name link)))
+                      (expand-file-name link))
+                     ;; Handle absolute file paths (no protocol)
+                     ((and (not type) (file-name-absolute-p link) (file-exists-p link))
+                      link))))
+    (when (and file-path (file-exists-p file-path))
+      (when (yes-or-no-p (format "Delete file %s? " file-path))
+        (delete-file file-path)
+        (message "Deleted file: %s" file-path)))
+    ;; Remove the link regardless of whether file was deleted
+    (let ((label (if (match-end 2)
+                     (match-string-no-properties 2)
+                   (org-link-unescape (match-string-no-properties 1)))))
+      (delete-region (match-beginning 0) (match-end 0))
+      (insert label))))
+
+;;;###autoload
 (defun +org/yank-link ()
   "Copy the url at point to the clipboard.
 If on top of an Org link, will only copy the link component."

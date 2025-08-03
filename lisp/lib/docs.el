@@ -240,7 +240,7 @@
                   (beg (max (point-min) (1- (org-element-property :begin el))))
                   (end (org-element-property :end el))
                   ((memq (org-element-type el) '(drawer property-drawer))))
-         (when (org-element-property-inherited :level el)
+         (when (org-element-property :level el)
            (cl-decf end))
          (org-fold-core-region beg end doom-docs-mode 'doom-doc-hidden))))
     ;; FIX: If the cursor remains within a newly folded region, that folk will
