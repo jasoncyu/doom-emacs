@@ -133,19 +133,21 @@ or if the current buffer is read-only or not file-visiting."
       (sp-pair "'"  nil :unless unless-list)
       (sp-pair "\"" nil :unless unless-list))
 
-    ;; Expand {|} => { | }
-    ;; Expand {|} => {
-    ;;   |
-    ;; }
-    (dolist (brace '("(" "{" "["))
-      (sp-pair brace nil
-               :post-handlers '(("||\n[i]" "RET") ("| " "SPC"))
-               ;; Don't autopair opening braces if before a word character or
-               ;; other opening brace. The rationale: it interferes with manual
-               ;; balancing of braces, and is odd form to have s-exps with no
-               ;; whitespace in between, e.g. ()()(). Insert whitespace if
-               ;; genuinely want to start a new form in the middle of a word.
-               :unless '(sp-point-before-word-p sp-point-before-same-p)))
+    (sp-pair "(" ")" :wrap "C-(")
+    ;; Disabling the below makes deleting pairs work again
+    ;; ;; Expand {|} => { | }
+    ;; ;; Expand {|} => {
+    ;; ;;   |
+    ;; ;; }
+    ;; (dolist (brace '("(" "{" "["))
+    ;;   (sp-pair brace nil
+    ;;            :post-handlers '(("||\n[i]" "RET") ("| " "SPC"))
+    ;;            ;; Don't autopair opening braces if before a word character or
+    ;;            ;; other opening brace. The rationale: it interferes with manual
+    ;;            ;; balancing of braces, and is odd form to have s-exps with no
+    ;;            ;; whitespace in between, e.g. ()()(). Insert whitespace if
+    ;;            ;; genuinely want to start a new form in the middle of a word.
+    ;;            :unless '(sp-point-before-word-p sp-point-before-same-p)))
 
     ;; In lisps ( should open a new form if before another parenthesis
     (sp-local-pair sp-lisp-modes "(" ")" :unless '(:rem sp-point-before-same-p))
