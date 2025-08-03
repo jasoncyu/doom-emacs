@@ -502,7 +502,7 @@ don't offer any/enough real value to users.")
        :nv "gf"  #'+lookup/file
        :nv "gI"  #'+lookup/implementations)
       (:when (modulep! :tools eval)
-       :nv "gr"  #'+eval:region
+       :nv "gr"  #'+eval/line-or-region
        :n  "gR"  #'+eval/buffer
        :v  "gR"  #'+eval:replace-region
        ;; Restore these keybinds, since the blacklisted/overwritten gr/gR will

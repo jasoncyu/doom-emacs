@@ -10,7 +10,9 @@
          (lfe-mode . lispy-mode)
          (dune-mode . lispy-mode)
          (clojure-mode . lispy-mode)
-         (fennel-mode . lispy-mode))
+         (fennel-mode . lispy-mode)
+         ;; (python-mode . lispy-mode)
+         )
   :init
   (add-hook! 'eval-expression-minibuffer-setup-hook
     (defun doom-init-lispy-in-eval-expression-h ()
@@ -39,7 +41,11 @@
   :init
   (setq lispyville-key-theme
         '((operators normal)
+          commentary
+          wrap
+          additional-wrap
           c-w
+          c-u
           (prettify insert)
           (atom-movement t)
           slurp/barf-lispy
@@ -47,6 +53,21 @@
           additional-insert))
   :config
   (lispyville-set-key-theme)
+  ;; at least for python
+  (add-hook! python-mode
+    (setq lispy-no-space t)
+    (setq lispy-colon-p nil)
+    )
+
+  (setq lispy-insert-space-after-wrap nil)
+  (map! (:map lispy-mode-map
+         ;; Temp for python
+         ;; :i "DEL" #'backward-delete-char
+         :i "M-(" #'lispyville-wrap-round
+         :i "M-[" #'lispyville-wrap-brackets
+         :i "M-{" #'lispyville-wrap-braces
+         ))
+
   (add-hook! 'evil-escape-inhibit-functions
     (defun +lispy-inhibit-evil-escape-fn ()
       (and lispy-mode (evil-insert-state-p)))))
