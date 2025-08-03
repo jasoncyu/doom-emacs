@@ -27,6 +27,8 @@
       (set-eglot-client! 'python-mode '("Microsoft.Python.LanguageServer"))))
 
   (when (modulep! +tree-sitter)
+    ;; It overwrites my rainbow identifiers
+    (add-hook 'python-mode-hook (lambda () (tree-sitter-hl-mode -1)))
     (add-hook 'python-mode-local-vars-hook #'tree-sitter! 'append))
   :config
   (set-repl-handler! 'python-mode #'+python/open-repl
@@ -265,4 +267,5 @@
   :when (modulep! +lsp)
   :when (modulep! +pyright)
   :when (modulep! :tools lsp -eglot)
+  :custom (lsp-pyright-langserver-command "basedpyright")
   :defer t)

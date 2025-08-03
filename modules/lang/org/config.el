@@ -817,8 +817,16 @@ between the two."
 
   (add-hook 'doom-delete-backward-functions
             #'+org-delete-backward-char-and-realign-table-maybe-h)
+  (defun jason/smart-clock-in ()
+    "Clock in with C-u C-u C-u prefix if last clock-out was within 3 minutes, otherwise clock in normally."
+    (interactive)
+    (let ((three-minutes-ago (time-subtract (current-time) (seconds-to-time (* 3 60)))))
+      (if (and org-clock-out-time (time-less-p three-minutes-ago org-clock-out-time))
+          (org-clock-in '(64))  ; C-u C-u C-u prefix arg
+        (org-clock-in))))
 
   (map! :map org-mode-map
+        [remap org-clock-in]        #'jason/smart-clock-in
         "C-c C-S-l"  #'+org/remove-link
         "C-c C-i"    #'org-toggle-inline-images
         ;; textmate-esque newline insertion
