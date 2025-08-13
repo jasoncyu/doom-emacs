@@ -108,7 +108,8 @@ possible, or just one char if that's not possible."
            (delete-char (- (1+ (% (1- current-column) tab-width)))))
 
           ;; Otherwise do a regular delete
-          ((delete-char -1)))))
+          ((sp-backward-delete-char 1)))))
+
 
 ;;;###autoload
 (defun +default--delete-backward-char-a (n &optional killflag)
@@ -158,7 +159,10 @@ possible, or just one char if that's not possible."
                        (beg  (plist-get pair :beg))
                        (end  (plist-get pair :end)))
                   (cond ((and end beg (= end (+ beg (length op) (length cl))))
-                         (delete-char (- (length op))))
+                         ;; This allows BCK over closing delimiter
+                         (sp-backward-delete-char 1)
+                         ;; (delete-char (- (length op)))
+                         )
                         ((doom-surrounded-p pair 'inline 'balanced)
                          (delete-char -1 killflag)
                          (delete-char 1)
