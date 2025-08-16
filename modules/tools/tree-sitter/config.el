@@ -1,6 +1,6 @@
 ;;; tools/tree-sitter/config.el -*- lexical-binding: t; -*-
 
-(defvar +tree-sitter-hl-enabled-modes '(not web-mode typescript-tsx-mode)
+(defvar +tree-sitter-hl-enabled-modes '(not web-mode typescript-tsx-mode python-mode)
   "A list of major modes which should be highlighted by tree-sitter.
 
 If this list begins with `not', then it negates the list.

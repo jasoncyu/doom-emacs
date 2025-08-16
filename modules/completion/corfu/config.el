@@ -63,7 +63,8 @@ If any return non-nil, `corfu-auto' will not invoke as-you-type completion.")
                                        (modulep! +orderless))
                                    'separator t)
         corfu-quit-no-match corfu-quit-at-boundary
-        tab-always-indent 'complete)
+        tab-always-indent 'complete
+        corfu-separator ?\s)
 
   (add-to-list 'completion-category-overrides `(lsp-capf (styles ,@completion-styles)))
   (add-to-list 'corfu-auto-commands #'lispy-colon)
