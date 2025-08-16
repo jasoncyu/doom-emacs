@@ -196,6 +196,8 @@ PLIST can have the following properties:
   [left-margin mouse-1]   #'ignore
   [remap forward-button]  #'+doom-dashboard/forward-button
   [remap backward-button] #'+doom-dashboard/backward-button
+  "j"       #'forward-button
+  "k"       #'backward-button
   "n"       #'forward-button
   "p"       #'backward-button
   "C-n"     #'forward-button

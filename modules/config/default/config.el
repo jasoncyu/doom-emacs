@@ -133,7 +133,7 @@ or if the current buffer is read-only or not file-visiting."
       (sp-pair "'"  nil :unless unless-list)
       (sp-pair "\"" nil :unless unless-list))
 
-    (sp-pair "(" ")" :wrap "C-(")
+    ;; (sp-pair "(" ")" :wrap "C-(")
     ;; Disabling the below makes deleting pairs work again
     ;; ;; Expand {|} => { | }
     ;; ;; Expand {|} => {
@@ -265,12 +265,12 @@ or if the current buffer is read-only or not file-visiting."
     ;; Don't close parens in strings
     (sp-local-pair 'prog-mode "(" ")" :unless '(sp-in-string-p))
     (after! smartparens-python
-      (sp-with-modes 'python-mode
-        ;; Automatically close f-strings
-        (sp-local-pair "f\"" "\"")
-        (sp-local-pair "f\"\"\"" "\"\"\"")
-        (sp-local-pair "f'''" "'''")
-        (sp-local-pair "f'" "'"))
+        (sp-with-modes 'python-mode
+          ;; Automatically close f-strings
+          (sp-local-pair "f\"" "\"")
+          (sp-local-pair "f\"\"\"" "\"\"\"")
+          (sp-local-pair "f'''" "'''")
+          (sp-local-pair "f'" "'"))
       ;; Original keybind interferes with smartparens rules
       (define-key python-mode-map (kbd "DEL") nil)
       ;; Interferes with the def snippet in doom-snippets

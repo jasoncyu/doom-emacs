@@ -42,7 +42,8 @@ If any return non-nil, `corfu-auto' will not invoke as-you-type completion.")
   :config
   (setq corfu-auto t
         corfu-auto-delay 0.24
-        corfu-auto-prefix 2
+        ;; 1 is good for python short var names
+        corfu-auto-prefix 1
         global-corfu-modes
         '((not erc-mode
                circe-mode
@@ -161,10 +162,26 @@ This function respects the value of `+corfu-want-minibuffer-completion':
   (add-hook! '(org-mode-hook markdown-mode-hook)
     (defun +corfu-add-cape-elisp-block-h ()
       (add-hook 'completion-at-point-functions #'cape-elisp-block 0 t)))
+  ;; (add-hook! '(python-mode-hook)
+  ;;   (defun +corfu-add-my-cape-dabbrev-h ()
+  ;;       ;; Use this: it respects the dabbrev regex, which is good for matching stuff like A[i][j]
+  ;;     (add-hook 'completion-at-point-functions (cape-capf-silent #'dabbrev-capf) 0 t)))
   ;; Enable Dabbrev completion basically everywhere as a fallback.
+  (defalias 'jason--dabbrev-capf (cape-capf-silent #'dabbrev-capf))
   (when (modulep! +dabbrev)
+    (use-package dabbrev)
+    ;; (defun cape-dabbrev (&optional interactive)
+    ;;   (interactive (list t))
+    ;;   (if interactive
+    ;;       (call-interactively (cape-capf-interactive #'jason--dabbrev-capf)))
+    ;;   (jason--dabbrev-capf)
+    ;;   )
+    ;; (defalias #'cape-dabbrev #'jason/cape-dabbrev)
+
     ;; Adds too much random other stuff
     (setq cape-dabbrev-check-other-buffers nil)
+    (setq cape-dabbrev-check-all-buffers nil)
+
     ;; Set up `cape-dabbrev' options.
     (add-hook! '(prog-mode-hook
                  text-mode-hook
@@ -173,7 +190,9 @@ This function respects the value of `+corfu-want-minibuffer-completion':
                  minibuffer-setup-hook
                  eshell-mode-hook)
       (defun +corfu-add-cape-dabbrev-h ()
-        (add-hook 'completion-at-point-functions #'cape-dabbrev 20 t)))
+        ;; (add-hook 'completion-at-point-functions (cape-capf-silent #'dabbrev-capf) 20 t)
+        (add-hook 'completion-at-point-functions #'cape-dabbrev 0 t)
+        ))
     (after! dabbrev
       (setq dabbrev-friend-buffer-function #'+corfu-dabbrev-friend-buffer-p
             dabbrev-ignored-buffer-regexps
@@ -183,6 +202,16 @@ This function respects the value of `+corfu-want-minibuffer-completion':
       (add-to-list 'dabbrev-ignored-buffer-modes 'pdf-view-mode)
       (add-to-list 'dabbrev-ignored-buffer-modes 'doc-view-mode)
       (add-to-list 'dabbrev-ignored-buffer-modes 'tags-table-mode)))
+
+  (defun +corfu-cape-dabbrev-replacement (&optional interactive)
+    "Drop-in replacement for cape-dabbrev that uses dabbrev-capf instead.
+
+If INTERACTIVE is nil the function acts like a Capf. Uses dabbrev-capf
+internally which respects dabbrev regex patterns for better matching."
+    (interactive (list t))
+    (if interactive
+        (cape-interactive #'+corfu-cape-dabbrev-replacement)
+      (funcall (cape-capf-silent #'dabbrev-capf))))
 
   ;; Make these capfs composable.
   (advice-add #'lsp-completion-at-point :around #'cape-wrap-noninterruptible)
