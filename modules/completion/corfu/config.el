@@ -11,7 +11,7 @@ Possible values are:
 (defvar +corfu-buffer-scanning-size-limit (* 1 1024 1024) ; 1 MB
   "Size limit for a buffer to be scanned by `cape-dabbrev'.")
 
-(defvar +corfu-want-minibuffer-completion t
+(defvar +corfu-want-minibuffer-completion nil
   "Whether to enable Corfu in the minibuffer.
 Setting this to `aggressive' will enable Corfu in more commands which
 use the minibuffer such as `query-replace'.")
@@ -170,7 +170,7 @@ This function respects the value of `+corfu-want-minibuffer-completion':
   ;; Enable Dabbrev completion basically everywhere as a fallback.
   (defalias 'jason--dabbrev-capf (cape-capf-silent #'dabbrev-capf))
   (when (modulep! +dabbrev)
-    (use-package dabbrev)
+    ;; (use-package dabbrev)
     ;; (defun cape-dabbrev (&optional interactive)
     ;;   (interactive (list t))
     ;;   (if interactive
@@ -182,6 +182,8 @@ This function respects the value of `+corfu-want-minibuffer-completion':
     ;; Adds too much random other stuff
     (setq cape-dabbrev-check-other-buffers nil)
     (setq cape-dabbrev-check-all-buffers nil)
+    (setq dabbrev-abbrev-char-regexp "[][[:word:]]")
+
 
     ;; Set up `cape-dabbrev' options.
     (add-hook! '(prog-mode-hook
