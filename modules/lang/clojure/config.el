@@ -15,7 +15,7 @@
 ;;; Packages
 
 (use-package! clojure-mode
-  :defer t
+  :hook (clojure-mode . rainbow-delimiters-mode)
   :config
   (set-formatter! 'cljfmt '("cljfmt" "fix" "-") :modes '(clojure-mode clojurec-mode clojurescript-mode))
 

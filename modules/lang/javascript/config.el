@@ -42,6 +42,7 @@
   :mode "\\.es6\\'"
   :mode "\\.pac\\'"
   :interpreter "node"
+  :hook (rjsx-mode . rainbow-delimiters-mode)
   :init
   ;; Parse node stack traces in the compilation buffer
   (after! compilation
@@ -90,7 +91,8 @@
 
 
 (use-package! typescript-mode
-  :defer t
+  :hook (typescript-mode . rainbow-delimiters-mode)
+  :hook (typescript-tsx-mode . rainbow-delimiters-mode)
   :init
   (when (modulep! :lang web)
     (autoload 'typescript-tsx-mode "typescript-mode" nil t))

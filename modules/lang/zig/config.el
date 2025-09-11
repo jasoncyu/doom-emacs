@@ -9,7 +9,7 @@
 ;;; Packages
 
 (use-package! zig-mode
-  :defer t
+  :hook (zig-mode . rainbow-delimiters-mode)
   :config
   (setq zig-format-on-save nil) ; rely on :editor format instead
 
