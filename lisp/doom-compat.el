@@ -7,6 +7,15 @@
 ;;
 ;;; Code:
 
+;; These two functions don't exist in terminal Emacs, but some Emacs packages
+;; (internal and external) use it anyway, leading to void-function errors. I
+;; define a no-op substitute to suppress them.
+(unless (fboundp 'define-fringe-bitmap)
+  (fset 'define-fringe-bitmap #'ignore))
+(unless (fboundp 'set-fontset-font)
+  (fset 'set-fontset-font #'ignore))
+
+
 ;;; From Emacs >= 28
 ;; `format-spec' wasn't autoloaded until 28.1
 (unless (fboundp 'format-spec)
@@ -110,23 +119,6 @@ and return the value found in PLACE instead."
 (unless (fboundp 'pos-eol) (defalias 'pos-eol #'line-end-position))
 
 ;; Introduced in 29.1
-(unless (boundp 'major-mode-remap-alist)
-  (defvar major-mode-remap-alist nil)
-  (defvar-local set-auto-mode--last nil)
-  (define-advice set-auto-mode-0 (:override (mode &optional keep-mode-if-same) backport-major-mode-remap)
-    (unless (and keep-mode-if-same
-                 (or (eq (indirect-function mode)
-                         (indirect-function major-mode))
-                     (and set-auto-mode--last
-                          (eq mode (car set-auto-mode--last))
-                          (eq major-mode (cdr set-auto-mode--last)))))
-      (when mode
-        (funcall (major-mode-remap mode))
-        (unless (eq mode major-mode)
-          (setq set-auto-mode--last (cons mode major-mode)))
-        mode))))
-
-;; Introduced in 29.1
 (unless (boundp 'enable-theme-functions)
   (defcustom enable-theme-functions nil
     "Abnormal hook that is run after a theme has been enabled.
@@ -149,16 +141,49 @@ The functions in the hook are called with one parameter -- the
       (funcall fn theme)
       (run-hook-with-args 'enable-theme-functions theme))))
 
+;; Introduced in 29.1
+;; In case of Emacs builds where treesit isn't built in (to avoid void-function
+;; errors and verbose, redundant checks everywhere).
+;;;###autodef
+(unless (fboundp 'treesit-available-p)
+  (defun treesit-available-p ()
+    "Return non-nil if tree-sitter support is built-in and available."
+    nil))
+
+;;;###autoload
+(unless (fboundp 'treesit-library-abi-version)
+  (defun treesit-library-abi-version (&optional _min-compatible)
+    0))
+
+;;;###autoload
+(unless (fboundp 'treesit-language-abi-version)
+  (defun treesit-language-abi-version (&optional _lang)
+    nil))
+
 
 ;;; From Emacs >= 30
 ;; Introduced in 30.1
 (unless (fboundp 'major-mode-remap)
+  (defvar major-mode-remap-alist nil)  ; introduced in 29.1
   (defvar major-mode-remap-defaults nil)
   (defun major-mode-remap (mode)
     "Return the function to use to enable MODE."
     (or (cdr (or (assq mode major-mode-remap-alist)
                  (assq mode major-mode-remap-defaults)))
-        mode)))
+        mode))
+  (defvar-local set-auto-mode--last nil)
+  (define-advice set-auto-mode-0 (:override (mode &optional keep-mode-if-same) backport-major-mode-remap)
+    (unless (and keep-mode-if-same
+                 (or (eq (indirect-function mode)
+                         (indirect-function major-mode))
+                     (and set-auto-mode--last
+                          (eq mode (car set-auto-mode--last))
+                          (eq major-mode (cdr set-auto-mode--last)))))
+      (when mode
+        (funcall (major-mode-remap mode))
+        (unless (eq mode major-mode)
+          (setq set-auto-mode--last (cons mode major-mode)))
+        mode))))
 
 ;; Introduced in 30.1
 (unless (boundp 'safe-local-variable-directories)

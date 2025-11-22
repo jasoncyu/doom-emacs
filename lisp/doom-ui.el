@@ -502,17 +502,6 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
         show-paren-when-point-in-periphery t))
 
 
-;;;###package whitespace
-(setq whitespace-line-column nil
-      whitespace-style
-      '(face indentation tabs tab-mark spaces space-mark newline newline-mark
-        trailing lines-tail)
-      whitespace-display-mappings
-      '((tab-mark ?\t [?› ?\t])
-        (newline-mark ?\n [?¬ ?\n])
-        (space-mark ?\  [?·] [?.])))
-
-
 ;;
 ;;; Third party packages
 
@@ -744,7 +733,7 @@ triggering hooks during startup."
   (add-hook 'window-selection-change-functions #'doom-run-switch-window-hooks-h)
   (add-hook 'window-buffer-change-functions #'doom-run-switch-buffer-hooks-h)
   ;; `window-buffer-change-functions' doesn't trigger for files visited via the server.
-  (add-hook 'server-visit-hook #'doom-run-switch-buffer-hooks-h))
+  (add-hook 'server-switch-hook #'doom-run-switch-buffer-hooks-h))
 
 ;; Apply fonts and theme
 (let ((hook (if (daemonp)
@@ -774,21 +763,6 @@ triggering hooks during startup."
                customize-changed-options customize-save-customized))
   (put sym 'disabled "Doom doesn't support `customize', configure Emacs from $DOOMDIR/config.el instead"))
 (put 'customize-themes 'disabled "Set `doom-theme' or use `load-theme' in $DOOMDIR/config.el instead")
-
-;; These two functions don't exist in terminal Emacs, but some Emacs packages
-;; (internal and external) use it anyway, leading to void-function errors. I
-;; define a no-op substitute to suppress them.
-(unless (fboundp 'define-fringe-bitmap)
-  (fset 'define-fringe-bitmap #'ignore))
-(unless (fboundp 'set-fontset-font)
-  (fset 'set-fontset-font #'ignore))
-
-(after! whitespace
-  (defun doom--in-parent-frame-p ()
-    "`whitespace-mode' inundates child frames with whitespace markers, so
-disable it to fix all that visual noise."
-    (null (frame-parameter nil 'parent-frame)))
-  (add-function :before-while whitespace-enable-predicate #'doom--in-parent-frame-p))
 
 (provide 'doom-ui)
 ;;; doom-ui.el ends here

@@ -68,10 +68,17 @@ If set to `nil', disable all the above behaviors.")
 
 (when (modulep! +lsp)
   (add-hook! '(css-mode-local-vars-hook
+               css-ts-mode-local-vars-hook
                scss-mode-local-vars-hook
                sass-mode-local-vars-hook
                less-css-mode-local-vars-hook)
              :append #'lsp!))
 
-(when (modulep! +tree-sitter)
-  (add-hook 'css-mode-local-vars-hook #'tree-sitter! 'append))
+
+(use-package! css-ts-mode  ; 29.1+ only
+  :when (modulep! +tree-sitter)
+  :defer t
+  :init
+  (set-tree-sitter! 'css-mode 'css-ts-mode
+    `((css :url "https://github.com/tree-sitter/tree-sitter-css"
+           :rev ,(if (< (treesit-library-abi-version) 15) "v0.23.0" "v0.23.2")))))

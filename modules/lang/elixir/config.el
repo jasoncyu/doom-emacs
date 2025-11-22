@@ -8,14 +8,8 @@
 ;;
 ;;; Packages
 
-(use-package! elixir-mode
-  :defer t
-  :init
-  ;; Disable default smartparens config. There are too many pairs; we only want
-  ;; a subset of them (defined below).
-  (provide 'smartparens-elixir)
-  :config
-  (set-ligatures! 'elixir-mode
+(defun +elixir-common-config (mode)
+  (set-ligatures! mode
     ;; Functional
     :def "def"
     :lambda "fn"
@@ -29,7 +23,7 @@
     :return "return" :yield "use")
 
   ;; ...and only complete the basics
-  (sp-with-modes 'elixir-mode
+  (sp-with-modes mode
     (sp-local-pair "do" "end"
                    :when '(("RET" "<evil-ret>"))
                    :unless '(sp-in-comment-p sp-in-string-p)
@@ -37,34 +31,66 @@
     (sp-local-pair "do " " end" :unless '(sp-in-comment-p sp-in-string-p))
     (sp-local-pair "fn " " end" :unless '(sp-in-comment-p sp-in-string-p)))
 
-  (when (modulep! +lsp +tree-sitter)
-    (add-hook 'elixir-ts-mode-local-vars-hook #'lsp! 'append))
+  (when (modulep! +lsp)
+    (add-hook (intern (format "%s-local-vars-hook" mode)) #'lsp! 'append))
+
+  (use-package! flycheck-credo
+    :when (modulep! :checkers syntax -flymake)
+    :config (flycheck-credo-setup))
+
+  (use-package! exunit
+    :defer t
+    :init
+    (add-hook (intern (format "%s-hook" mode)) #'exunit-mode)
+    (map! :localleader
+          :map ,(intern (format "%s-map" mode))
+          :prefix ("t" . "test")
+          "a" #'exunit-verify-all
+          "r" #'exunit-rerun
+          "v" #'exunit-verify
+          "T" #'exunit-toggle-file-and-test
+          "t" #'exunit-toggle-file-and-test-other-window
+          "s" #'exunit-verify-single)))
+
+
+(use-package! elixir-mode
+  :defer t
+  :init
+  ;; Disable default smartparens config. There are too many pairs; we only want
+  ;; a subset of them (defined below).
+  (provide 'smartparens-elixir)
 
   (when (modulep! +lsp)
-    (add-hook 'elixir-mode-local-vars-hook #'lsp! 'append)
     (after! lsp-mode
-      (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]_build\\'")))
+      (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]_build\\'"))
+    (after! lsp-elixir
+      ;; HACK: lsp-elixir is hardcoded to use the server `lsp-install-server'
+      ;;   installs, ignoring any system-provided executables. This fixes that,
+      ;;   so long as the user hasn't changed `lsp-elixir-server-command'
+      ;;   themselves,
+      (when (and (member lsp-elixir-server-command
+                         '(("language_server.bat")
+                           ("language_server.sh")))
+                 (executable-find "elixir-ls"))
+        (setq lsp-elixir-server-command "elixir-ls"))))
+  :config
+  (+elixir-common-config 'elixir-mode))
 
-  (when (modulep! +tree-sitter)
-    (add-hook 'elixir-mode-local-vars-hook #'tree-sitter! 'append)))
 
-
-(use-package! flycheck-credo
-  :when (modulep! :checkers syntax -flymake)
-  :after elixir-mode
-  :config (flycheck-credo-setup))
-
-
-(use-package! exunit
-  :hook (elixir-mode . exunit-mode)
+(use-package! elixir-ts-mode  ; 30.1+ only
+  :when (modulep! +tree-sitter)
+  :defer t
   :init
-  (map! :after elixir-mode
-        :localleader
-        :map elixir-mode-map
-        :prefix ("t" . "test")
-        "a" #'exunit-verify-all
-        "r" #'exunit-rerun
-        "v" #'exunit-verify
-        "T" #'exunit-toggle-file-and-test
-        "t" #'exunit-toggle-file-and-test-other-window
-        "s" #'exunit-verify-single))
+  (set-tree-sitter! 'elixir-mode 'elixir-ts-mode
+    '((elixir :url "https://github.com/elixir-lang/tree-sitter-elixir"
+              :commit "02a6f7fd4be28dd94ee4dd2ca19cb777053ea74e")
+      (heex :url "https://github.com/phoenixframework/tree-sitter-heex"
+            :commit "f6b83f305a755cd49cf5f6a66b2b789be93dc7b9")))
+  :config
+  (+elixir-common-config 'elixir-ts-mode))
+
+
+(use-package! heex-ts-mode
+  :when (modulep! +tree-sitter)
+  :when (fboundp 'heex-ts-mode) ; 30.1+ only
+  :mode "\\.[hl]?eex\\'")

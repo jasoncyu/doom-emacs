@@ -1,15 +1,18 @@
 ;; -*- no-byte-compile: t; -*-
 ;;; tools/magit/packages.el
 
-(package! transient :pin "aa32e0d66cc389befed7a8e8df9439d92a729daa") ; 0.9.4
-(package! magit :pin "5b820a1d1e94649e0f218362286d520d9f29ac2c") ; 4.3.8
+;; HACK: Fixes magit/magit#5462. Remove when addressed upstream.
+(defvar magit-auto-revert-mode nil)
+
+(package! transient :pin "053d56e4de2dd78bf32f7af7ed5f289a91cdb6ac") ; 0.10.1
+(package! magit :pin "b828afbb4b45641998fb6483a08effb1efb214e1") ; 4.4.2
 (when (modulep! +forge)
   (package! forge
-    :pin "a31859547a1ea5e2acbab67b6b64f90134e2a156" ; 0.5.3
+    :pin "71910a26e360bfe88eb81b47f377f7694161fe9b" ; 0.6.2
     ;; forge depends on ghub, which requires Emacs 29.1+
     :disable (version< emacs-version "29.1"))
   (package! ghub
-    :pin "97a07691efad6fc16bc000a35be80d4f8dae251a" ; 4.3.2
+    :pin "447cb51fa7d19e1fb3844acdd2c540be04299ffb" ; 5.0.2
     ;; ghub requires Emacs 29.1+
     :disable (version< emacs-version "29.1"))
   (package! code-review

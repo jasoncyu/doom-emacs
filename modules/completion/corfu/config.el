@@ -249,6 +249,7 @@ internally which respects dabbrev regex patterns for better matching."
 
 (use-package! corfu-terminal
   :when (modulep! :os tty)
+  :unless (featurep 'tty-child-frames)
   :hook ((corfu-mode . corfu-terminal-mode)))
 
 

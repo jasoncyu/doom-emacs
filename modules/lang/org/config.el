@@ -253,28 +253,6 @@ Also adds support for a `:sync' parameter to override `:async'."
             (funcall orig-fn arg info params)
           (funcall fn orig-fn arg info params)))))
 
-  ;; HACK Fix #6061. Seems `org-babel-do-in-edit-buffer' has the side effect of
-  ;;   deleting side windows. Should be reported upstream! This advice
-  ;;   suppresses this behavior wherever it is known to be used.
-  (defadvice! +org-fix-window-excursions-a (fn &rest args)
-    "Suppress changes to the window config anywhere
-`org-babel-do-in-edit-buffer' is used."
-    :around #'evil-org-open-below
-    :around #'evil-org-open-above
-    :around #'org-indent-region
-    :around #'org-indent-line
-    (save-window-excursion (apply fn args)))
-
-  (defadvice! +org-fix-newline-and-indent-in-src-blocks-a (&optional indent _arg _interactive)
-    "Mimic `newline-and-indent' in src blocks w/ lang-appropriate indentation."
-    :after #'org-return
-    (when (and indent
-               org-src-tab-acts-natively
-               (org-in-src-block-p t))
-      (save-window-excursion
-        (org-babel-do-in-edit-buffer
-         (call-interactively #'indent-for-tab-command)))))
-
   (defadvice! +org-inhibit-mode-hooks-a (fn datum name &optional initialize &rest args)
     "Prevent potentially expensive mode hooks in `org-babel-do-in-edit-buffer' ops."
     :around #'org-src--edit-element
@@ -306,23 +284,7 @@ Also adds support for a `:sync' parameter to override `:async'."
         (save-excursion
           (when-let ((beg (org-babel-where-is-src-block-result))
                      (end (progn (goto-char beg) (forward-line) (org-babel-result-end))))
-            (org-display-inline-images nil nil (min beg end) (max beg end)))))))
-
-  (after! python
-    (unless org-babel-python-command
-      (setq org-babel-python-command
-            (string-trim
-             (concat python-shell-interpreter " "
-                     (if (string-match-p "\\<i?python[23]?$" python-shell-interpreter)
-                         (replace-regexp-in-string
-                          "\\(^\\| \\)-i\\( \\|$\\)" " " python-shell-interpreter-args)
-                       python-shell-interpreter-args))))))
-
-  (after! ob-ditaa
-    ;; TODO Should be fixed upstream
-    (let ((default-directory (org-find-library-dir "org-contribdir")))
-      (setq org-ditaa-jar-path     (expand-file-name "scripts/ditaa.jar")
-            org-ditaa-eps-jar-path (expand-file-name "scripts/DitaaEps.jar")))))
+            (org-display-inline-images nil nil (min beg end) (max beg end))))))))
 
 
 (defun +org-init-babel-lazy-loader-h ()
@@ -719,14 +681,6 @@ mutating hooks on exported output, like formatters."
   (add-to-list 'org-file-apps '(directory . emacs))
   (add-to-list 'org-file-apps '(remote . emacs))
 
-  ;; Some uses of `org-fix-tags-on-the-fly' occur without a check on
-  ;; `org-auto-align-tags', such as in `org-self-insert-command' and
-  ;; `org-delete-backward-char'.
-  ;; TODO Should be reported/PR'ed upstream
-  (defadvice! +org--respect-org-auto-align-tags-a (&rest _)
-    :before-while #'org-fix-tags-on-the-fly
-    org-auto-align-tags)
-
   (defadvice! +org--strip-properties-from-outline-a (fn &rest args)
     "Fix variable height faces in eldoc breadcrumbs."
     :around #'org-format-outline-path
@@ -850,7 +804,7 @@ between the two."
         "#" #'org-update-statistics-cookies
         "'" #'org-edit-special
         "*" #'org-ctrl-c-star
-        "+" #'org-ctrl-c-minus
+        "-" #'org-ctrl-c-minus
         "," #'org-switchb
         "." #'org-goto
         "@" #'org-cite-insert
@@ -1286,6 +1240,8 @@ between the two."
 
   ;;; Custom org modules
   (dolist (flag (doom-module :lang 'org :flags))
+    (when (eq flag '+roam2)  ; REVIEW: remove in v3
+      (setq flag '+roam))
     (load! (concat "contrib/" (substring (symbol-name flag) 1)) nil t))
 
   ;; Add our general hooks after the submodules, so that any hooks the

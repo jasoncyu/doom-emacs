@@ -23,7 +23,26 @@
     :for "for"
     :return "return"
     ;; Other
-    :yield "yield"))
+    :yield "yield")
+
+  (when (modulep! +lsp)
+    (add-hook (intern (format "%s-local-vars-hook" mode)) #'lsp! 'append)))
+
+
+(use-package! dart-mode
+  :defer t
+  :config
+  (+dart-common-config 'dart-mode))
+
+
+(use-package! dart-ts-mode
+  :when (modulep! +tree-sitter)
+  :defer t
+  :init
+  (set-tree-sitter! 'dart-mode 'dart-ts-mode
+    '((dart :url "https://github.com/ast-grep/tree-sitter-dart")))
+  :config
+  (+dart-common-config 'dart-ts-mode))
 
 
 (use-package! flutter

@@ -163,11 +163,23 @@
 
 (when (modulep! +lsp)
   (add-hook! '(html-mode-local-vars-hook
+               html-ts-mode-local-vars-hook
                web-mode-local-vars-hook
                nxml-mode-local-vars-hook)
              :append #'lsp!))
 
-(when (modulep! +tree-sitter)
-  (add-hook! '(html-mode-local-vars-hook
-               mhtml-mode-local-vars-hook)
-             :append #'tree-sitter!))
+
+(use-package! html-ts-mode  ; 30.1+ only
+  :when (modulep! +tree-sitter)
+  :defer t
+  :init
+  (set-tree-sitter! 'html-mode 'html-ts-mode
+    `((html :url "https://github.com/tree-sitter/tree-sitter-html"
+            :rev ,(if (< (treesit-library-abi-version) 15) "v0.23.0" "v0.23.2")))))
+
+
+(use-package! mhtml-ts-mode  ; 31+ only
+  :when (modulep! +tree-sitter)
+  :defer t
+  :init
+  (set-tree-sitter! 'mhtml-mode 'mhtml-ts-mode 'html))

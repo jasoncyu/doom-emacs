@@ -2,19 +2,6 @@
 ;;; Commentary:
 ;;; Code:
 
-(defvar doom-detect-indentation-excluded-modes
-  '(pascal-mode
-    so-long-mode
-    ;; Automatic indent detection in org files is meaningless. Not to mention, a
-    ;; non-standard `tab-width' causes an error in org-mode.
-    org-mode)
-  "A list of major modes where indentation shouldn't be auto-detected.")
-
-(defvar-local doom-inhibit-indent-detection nil
-  "A buffer-local flag that indicates whether `dtrt-indent' should try to detect
-indentation settings or not. This should be set by editorconfig if it
-successfully sets indent_style/indent_size.")
-
 (defvar doom-inhibit-large-file-detection nil
   "If non-nil, inhibit large/long file detection when opening files.")
 
@@ -104,8 +91,7 @@ possible."
       delete-old-versions t ; clean up after itself
       kept-old-versions 5
       kept-new-versions 5
-      backup-directory-alist (list (cons "." (concat doom-cache-dir "backup/")))
-      tramp-backup-directory-alist backup-directory-alist)
+      backup-directory-alist (list (cons "." (concat doom-cache-dir "backup/"))))
 
 ;; But turn on auto-save, so we have a fallback in case of crashes or lost data.
 ;; Use `recover-file' or `recover-session' to recover them.
@@ -116,12 +102,8 @@ possible."
       auto-save-include-big-deletions t
       ;; Keep it out of `doom-emacs-dir' or the local directory.
       auto-save-list-file-prefix (concat doom-cache-dir "autosave/")
-      tramp-auto-save-directory  (concat doom-cache-dir "tramp-autosave/")
       auto-save-file-name-transforms
-      (list (list "\\`/[^/]*:\\([^/]*/\\)*\\([^/]*\\)\\'"
-                  ;; Prefix tramp autosaves to prevent conflicts with local ones
-                  (concat auto-save-list-file-prefix "tramp-\\2") t)
-            (list ".*" auto-save-list-file-prefix t)))
+      (list (list ".*" auto-save-list-file-prefix t)))
 
 (add-hook! 'after-save-hook
   (defun doom-guess-mode-h ()
@@ -417,28 +399,12 @@ files, so this replace calls to `pp' with the much faster `prin1'."
     (server-start)))
 
 
-(after! tramp
-  (setq remote-file-name-inhibit-cache 60
-        tramp-completion-reread-directory-timeout 60
-        tramp-verbose 1
-        vc-ignore-dir-regexp (format "%s\\|%s\\|%s"
-                                     vc-ignore-dir-regexp
-                                     tramp-file-name-regexp
-                                     "[/\\\\]node_modules")))
-
-
 ;;
 ;;; Packages
 
 (use-package! better-jumper
   :hook (doom-first-input . better-jumper-mode)
   :commands doom-set-jump-a doom-set-jump-maybe-a doom-set-jump-h
-  :preface
-  ;; REVIEW Suppress byte-compiler warning spawning a *Compile-Log* buffer at
-  ;; startup. This can be removed once gilbertw1/better-jumper#2 is merged.
-  (defvar better-jumper-local-mode nil)
-  ;; REVIEW: Remove if/when gilbertw1/better-jumper#26 is addressed.
-  (defvaralias 'evil--jumps-jump-command 'evil--jumps-jumping-backward)
   :init
   (global-set-key [remap evil-jump-forward]  #'better-jumper-jump-forward)
   (global-set-key [remap evil-jump-backward] #'better-jumper-jump-backward)
@@ -487,50 +453,6 @@ files, so this replace calls to `pp' with the much faster `prin1'."
 
   ;; Create a jump point before jumping with imenu.
   (advice-add #'imenu :around #'doom-set-jump-a))
-
-
-(use-package! dtrt-indent
-  ;; Automatic detection of indent settings
-  :unless noninteractive
-  ;; I'm not using `global-dtrt-indent-mode' because it has hard-coded and rigid
-  ;; major mode checks, so I implement it in `doom-detect-indentation-h'.
-  :hook ((change-major-mode-after-body read-only-mode) . doom-detect-indentation-h)
-  :config
-  (defun doom-detect-indentation-h ()
-    (unless (or (not after-init-time)
-                doom-inhibit-indent-detection
-                doom-large-file-p
-                (eq major-mode 'fundamental-mode)
-                (member (substring (buffer-name) 0 1) '(" " "*"))
-                (apply #'derived-mode-p doom-detect-indentation-excluded-modes))
-      ;; Don't display messages in the echo area, but still log them
-      (let ((inhibit-message (not init-file-debug)))
-        (dtrt-indent-mode +1))))
-
-  ;; Enable dtrt-indent even in smie modes so that it can update `tab-width',
-  ;; `standard-indent' and `evil-shift-width' there as well.
-  (setq dtrt-indent-run-after-smie t)
-  ;; Reduced from the default of 5000 for slightly faster analysis
-  (setq dtrt-indent-max-lines 2000)
-
-  ;; always keep tab-width up-to-date
-  (push '(t tab-width) dtrt-indent-hook-generic-mapping-list)
-
-  (defvar dtrt-indent-run-after-smie)
-  (defadvice! doom--fix-broken-smie-modes-a (fn &optional arg)
-    "Some smie modes throw errors when trying to guess their indentation, like
-`nim-mode'. This prevents them from leaving Emacs in a broken state."
-    :around #'dtrt-indent-mode
-    (let ((dtrt-indent-run-after-smie dtrt-indent-run-after-smie))
-      (letf! ((defun symbol-config--guess (beg end)
-                (funcall symbol-config--guess beg (min end 10000)))
-              (defun smie-config-guess ()
-                (condition-case e (funcall smie-config-guess)
-                  (error (setq dtrt-indent-run-after-smie t)
-                         (message "[WARNING] Indent detection: %s"
-                                  (error-message-string e))
-                         (message ""))))) ; warn silently
-        (funcall fn arg)))))
 
 
 (use-package! smartparens
@@ -630,6 +552,15 @@ on."
                (bound-and-true-p comment-use-syntax)))
           (so-long-detected-long-line-p))))
     (setq so-long-predicate #'doom-buffer-has-long-lines-p))
+
+  ;; HACK: so-long triggers in places where we don't want it, like special
+  ;;   buffers (e.g. magit status) or temp buffers.
+  (defadvice! doom--exclude-special-modes-a (&rest _)
+    :before-while #'so-long-statistics-excessive-p
+    :before-while #'so-long-detected-long-line-p
+    (not (or (doom-temp-buffer-p (current-buffer))
+             (doom-special-buffer-p (current-buffer)))))
+
   ;; Don't disable syntax highlighting and line numbers, or make the buffer
   ;; read-only, in `so-long-minor-mode', so we can have a basic editing
   ;; experience in them, at least. It will remain off in `so-long-mode',
@@ -656,18 +587,6 @@ on."
       flycheck-mode
       smartparens-mode
       smartparens-strict-mode)))
-
-
-(use-package! ws-butler
-  ;; a less intrusive `delete-trailing-whitespaces' on save
-  :hook (doom-first-buffer . ws-butler-global-mode)
-  :config
-  (pushnew! ws-butler-global-exempt-modes
-            'special-mode
-            'comint-mode
-            'term-mode
-            'eshell-mode
-            'diff-mode))
 
 (provide 'doom-editor)
 ;;; doom-editor.el ends here

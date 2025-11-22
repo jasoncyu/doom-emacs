@@ -5,6 +5,11 @@
 ;; 2021, amirite?
 (setq-default vc-handled-backends '(SVN Git Hg))
 
+;; PERF: Ignore node_modules (expensive for vc ops to index).
+(setq-default vc-ignore-dir-regexp (format "%s\\|%s"
+                                           locate-dominating-stop-dir-regexp
+                                           "[/\\\\]node_modules"))
+
 (when (featurep :system 'windows)
   (setenv "GIT_ASKPASS" "git-gui--askpass"))
 
@@ -168,4 +173,20 @@ info in the `header-line-format' is a more visible indicator."
   (defadvice! +vc--fallback-to-master-branch-a ()
     "Return 'master' in detached state."
     :after-until #'browse-at-remote--get-local-branch
-    "master"))
+    "master")
+
+  ;; HACK: `vc-git--call's signature changed in 31+, breaking all uses of it in
+  ;;   `browse-at-remote'. This tides over the issue until it is addressed
+  ;;   upstream or we switch to git-link.
+  ;; REVIEW: Address this upstream or switch to git-link!
+  (when (> emacs-major-version 30)
+    (defadvice! +vc--compat-31-a (fn &rest args)
+      :around #'browse-at-remote--get-local-branch
+      :around #'browse-at-remote--get-remote-url
+      :around #'browse-at-remote--get-remotes
+      :around #'browse-at-remote--get-from-config
+      (if (< 2 (car (subr-arity (symbol-function #'vc-git--call))))
+          (letf! (defun vc-git--call (first &rest args)
+                   (apply vc-git--call nil first args))
+            (apply fn args))
+        (apply fn args)))))

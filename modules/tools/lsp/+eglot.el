@@ -8,9 +8,17 @@
         eglot-autoshutdown t
         ;; NOTE: We disable eglot-auto-display-help-buffer because :select t in
         ;;   its popup rule causes eglot to steal focus too often.
-        eglot-auto-display-help-buffer nil)
-  (when (modulep! :checkers syntax -flymake)
-    (setq eglot-stay-out-of '(flymake)))
+        eglot-auto-display-help-buffer nil
+        ;; Leave it to our modules and user config to initialize these.
+        eglot-stay-out-of
+        (append (if (modulep! :checkers syntax -flymake)
+                    '(flymake))
+                (if (modulep! :completion company)
+                    '(company)))
+        ;; Margin indicator may increase line height due to glyph display
+        ;; failures or emoji font height differences; I also think the eldoc
+        ;; hint is enough.
+        eglot-code-action-indications '(eldoc-hint))
 
   :config
   (set-popup-rule! "^\\*eglot-help" :size 0.15 :quit t :select t)
@@ -53,6 +61,19 @@ server an expensive restart when its buffer is reverted."
                           (+lsp-optimization-mode -1))))
                 server)))
       (funcall fn server))))
+
+
+(use-package! eglot-booster
+  :when (modulep! +booster)
+  :after eglot
+  :init
+  (setq eglot-booster-io-only
+        ;; JSON parser on 30+ is faster, so we only exploit eglot-booster's IO
+        ;; buffering (benefits more talkative LSP servers).
+        (and (> emacs-major-version 29)
+             (not (functionp 'json-rpc-connection))))
+  :config
+  (eglot-booster-mode +1))
 
 
 (use-package! consult-eglot
