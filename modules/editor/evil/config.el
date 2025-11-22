@@ -613,6 +613,8 @@ don't offer any/enough real value to users.")
 
       ;; Emulation of Vim's omni-completion keybinds
       (:unless evil-disable-insert-state-bindings
+        ;; Handy for inserting quickly
+        :i "C-y" #'consult-yasnippet
         (:prefix "C-x"
           (:when (modulep! :completion company)
            :i "C-l"  #'+company/whole-lines

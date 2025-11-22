@@ -182,8 +182,6 @@ This function respects the value of `+corfu-want-minibuffer-completion':
     ;; Adds too much random other stuff
     (setq cape-dabbrev-check-other-buffers nil)
     (setq cape-dabbrev-check-all-buffers nil)
-    ;; (setq dabbrev-abbrev-char-regexp "[][[:word:]]")
-
 
     ;; Set up `cape-dabbrev' options.
     (add-hook! '(prog-mode-hook
@@ -193,6 +191,7 @@ This function respects the value of `+corfu-want-minibuffer-completion':
                  minibuffer-setup-hook
                  eshell-mode-hook)
       (defun +corfu-add-cape-dabbrev-h ()
+        (setq dabbrev-abbrev-char-regexp "[][[:word:]]")
         ;; (add-hook 'completion-at-point-functions (cape-capf-silent #'dabbrev-capf) 20 t)
         ;; (add-hook 'completion-at-point-functions #'cape-dabbrev 20 t)
         ))

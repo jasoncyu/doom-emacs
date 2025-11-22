@@ -16,6 +16,7 @@
 (use-package! python
   :mode ("[./]flake8\\'" . conf-mode)
   :mode ("/Pipfile\\'" . conf-mode)
+  :hook (python-mode . rainbow-delimiters-mode)
   :init
   (setq python-environment-directory doom-cache-dir
         python-indent-guess-indent-offset-verbose nil)
