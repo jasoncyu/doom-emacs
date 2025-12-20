@@ -15,14 +15,14 @@
 
 (use-package! python
   :mode ("/\\(?:Pipfile\\|\\.?flake8\\)\\'" . conf-mode)
-  :hook (python-mode . rainbow-delimiters-mode)
+  :hook (python-ts-mode . rainbow-delimiters-mode)
   :init
   (setq python-environment-directory doom-cache-dir
         python-indent-guess-indent-offset-verbose nil)
 
   (when (modulep! +tree-sitter)
     ;; It overwrites my rainbow identifiers
-    (add-hook 'python-mode-hook (lambda () (tree-sitter-hl-mode -1)))
+    (add-hook! '(python-mode-hook python-ts-mode-hook) (lambda () (tree-sitter-hl-mode -1)))
     (set-tree-sitter! 'python-mode 'python-ts-mode
       `((python :url "https://github.com/tree-sitter/tree-sitter-python"
                 :rev ,(if (< (treesit-library-abi-version) 15) "v0.23.6" "v0.25.0")))))

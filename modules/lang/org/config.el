@@ -938,7 +938,9 @@ between the two."
          "o" #'+org/refile-to-other-window
          "O" #'+org/refile-to-other-buffer
          "v" #'+org/refile-to-visible
-         "r" #'org-refile
+         "p" #'org-ql/refile-to-project
+         ;; "r" #'org-refile
+         "r" #'org-ql/refile-to-anything
          "R" #'org-refile-reverse) ; to all `org-refile-targets'
         (:prefix ("s" . "tree/subtree")
          "a" #'org-toggle-archive-tag
