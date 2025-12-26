@@ -191,9 +191,9 @@ This function respects the value of `+corfu-want-minibuffer-completion':
                  minibuffer-setup-hook
                  eshell-mode-hook)
       (defun +corfu-add-cape-dabbrev-h ()
-        (setq dabbrev-abbrev-char-regexp "[][[:word:]]")
+        ;; (setq dabbrev-abbrev-char-regexp "[][[:word:]]")
         ;; (add-hook 'completion-at-point-functions (cape-capf-silent #'dabbrev-capf) 20 t)
-        ;; (add-hook 'completion-at-point-functions #'cape-dabbrev 20 t)
+        (add-hook 'completion-at-point-functions #'cape-dabbrev 20 t)
         ))
     (after! dabbrev
       (setq dabbrev-friend-buffer-function #'+corfu-dabbrev-friend-buffer-p

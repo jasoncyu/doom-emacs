@@ -283,3 +283,10 @@
   :when (modulep! :tools lsp -eglot)
   :custom (lsp-pyright-langserver-command "basedpyright")
   :defer t)
+
+(with-eval-after-load 'lsp-mode
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-tramp-connection "ty server")
+                    :major-modes '(python-mode)
+                    :priority 100 ; Higher numbers take precedence
+                    :server-id 'ty)))

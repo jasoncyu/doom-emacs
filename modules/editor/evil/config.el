@@ -438,10 +438,17 @@ don't offer any/enough real value to users.")
       ;; implement dictionary keybinds
       ;; evil already defines 'z=' to `ispell-word' = correct word at point
       (:when (modulep! :checkers spell)
-       :n  "zg"   #'+spell/add-word
-       :n  "zw"   #'+spell/remove-word
-       :m  "[s"   #'+spell/previous-error
-       :m  "]s"   #'+spell/next-error)
+        :n  "zg"   #'+spell/add-word
+        :n  "zw"   #'+spell/remove-word
+        :m  "[s"   #'+spell/previous-error
+        :m  "]s"   #'+spell/next-error
+        )
+      ;; * Replace with jinx
+      :n  "z="   #'jinx-correct
+      ;; :n  "zg"   #'+spell/add-word
+      ;; :n  "zw"   #'+spell/remove-word
+      :m  "[s"   #'jinx-previous
+      :m  "]s"   #'jinx-next
 
       ;; ported from vim-unimpaired
       :n  "] SPC" #'+evil/insert-newline-below
@@ -642,5 +649,5 @@ don't offer any/enough real value to users.")
            :i "s"    #'cape-dict
            :i "C-s"  #'yasnippet-capf
            :i "C-o"  #'completion-at-point
-           :i "C-n"  #'cape-dabbrev
+           :i "C-n"  #'+corfu-cape-dabbrev-replacement
            :i "C-p"  #'+corfu/dabbrev-this-buffer))))

@@ -136,9 +136,9 @@
 ;; TODO: combobulate or evil-textobj-tree-sitter
 
 
-;; (use-package! combobulate
-;;   :commands combobulate-query-builder
-;;   :hook (prog-mode . combobulate-mode))
+(use-package! combobulate
+  :commands combobulate-query-builder
+  :hook (prog-mode . combobulate-mode))
 
 
 ;; (use-package! evil-textobj-tree-sitter
