@@ -9,19 +9,6 @@
 ;;; Packages
 
 (defun +elixir-common-config (mode)
-  (set-ligatures! mode
-    ;; Functional
-    :def "def"
-    :lambda "fn"
-    ;; :src_block "do"
-    ;; :src_block_end "end"
-    ;; Flow
-    :not "!"
-    :in "in" :not-in "not in"
-    :and "and" :or "or"
-    :for "for"
-    :return "return" :yield "use")
-
   ;; ...and only complete the basics
   (sp-with-modes mode
     (sp-local-pair "do" "end"
@@ -72,7 +59,7 @@
                          '(("language_server.bat")
                            ("language_server.sh")))
                  (executable-find "elixir-ls"))
-        (setq lsp-elixir-server-command "elixir-ls"))))
+        (setq lsp-elixir-server-command '("elixir-ls")))))
   :config
   (+elixir-common-config 'elixir-mode))
 
@@ -83,9 +70,9 @@
   :init
   (set-tree-sitter! 'elixir-mode 'elixir-ts-mode
     '((elixir :url "https://github.com/elixir-lang/tree-sitter-elixir"
-              :commit "02a6f7fd4be28dd94ee4dd2ca19cb777053ea74e")
+              :commit "d24cecee673c4c770f797bac6f87ae4b6d7ddec5")
       (heex :url "https://github.com/phoenixframework/tree-sitter-heex"
-            :commit "f6b83f305a755cd49cf5f6a66b2b789be93dc7b9")))
+            :commit "b5a7cb5f74dc695a9ff5f04919f872ebc7a895e9")))
   :config
   (+elixir-common-config 'elixir-ts-mode))
 

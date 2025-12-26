@@ -91,7 +91,8 @@ possible."
       delete-old-versions t ; clean up after itself
       kept-old-versions 5
       kept-new-versions 5
-      backup-directory-alist (list (cons "." (concat doom-cache-dir "backup/"))))
+      backup-directory-alist `(("." . ,(concat doom-profile-cache-dir "backup/")))
+      tramp-backup-directory-alist backup-directory-alist)
 
 ;; But turn on auto-save, so we have a fallback in case of crashes or lost data.
 ;; Use `recover-file' or `recover-session' to recover them.
@@ -101,9 +102,28 @@ possible."
       ;; just deleted, but I believe that's VCS's jurisdiction, not ours.
       auto-save-include-big-deletions t
       ;; Keep it out of `doom-emacs-dir' or the local directory.
-      auto-save-list-file-prefix (concat doom-cache-dir "autosave/")
+      auto-save-list-file-prefix (concat doom-profile-cache-dir "autosave/")
+      ;; This resolves two issue while ensuring auto-save files are still
+      ;; reasonably recognizable at a glance:
+      ;;
+      ;; 1. Emacs generates long file paths for its auto-save files; long =
+      ;;    `auto-save-list-file-prefix' + `buffer-file-name'. If too long, some
+      ;;    filesystems (*cough*Windows) will murder your family. `sha1'
+      ;;    compresses the path into a ~40 character hash (Emacs 28+ only)!
+      ;; 2. The default transform rule writes TRAMP auto-save files to
+      ;;    `temporary-file-directory', which TRAMP doesn't like! It'll prompt
+      ;;    you about it every time an auto-save file is written, unless
+      ;;    `tramp-allow-unsafe-temporary-files' is set. A more sensible default
+      ;;    transform is better:
       auto-save-file-name-transforms
-      (list (list ".*" auto-save-list-file-prefix t)))
+      `(("\\`/[^/]*:\\([^/]*/\\)*\\([^/]*\\)\\'"
+         ,(file-name-concat auto-save-list-file-prefix "tramp-\\2-") sha1)
+        ("\\`/\\([^/]+/\\)*\\([^/]+\\)\\'" ,(file-name-concat auto-save-list-file-prefix "\\2-") sha1)))
+
+(add-hook! 'auto-save-hook
+  (defun doom-ensure-auto-save-prefix-exists-h ()
+    (with-file-modes #o700
+      (make-directory auto-save-list-file-prefix t))))
 
 (add-hook! 'after-save-hook
   (defun doom-guess-mode-h ()
@@ -125,30 +145,10 @@ tell you about it. Very annoying. This prevents that."
   (letf! ((#'sit-for #'ignore))
     (apply fn args)))
 
-;; HACK: Emacs generates long file paths for its auto-save files; long =
-;;   `auto-save-list-file-prefix' + `buffer-file-name'. If too long, the
-;;   filesystem will murder your family. To appease it, I compress
-;;   `buffer-file-name' to a stable 40 characters.
-;; TODO: PR this upstream; should be a universal issue!
-(defadvice! doom-make-hashed-auto-save-file-name-a (fn)
-  "Compress the auto-save file name so paths don't get too long."
-  :around #'make-auto-save-file-name
-  (let ((buffer-file-name
-         (if (or
-              ;; Don't do anything for non-file-visiting buffers. Names
-              ;; generated for those are short enough already.
-              (null buffer-file-name)
-              ;; If an alternate handler exists for this path, bow out. Most of
-              ;; them end up calling `make-auto-save-file-name' again anyway, so
-              ;; we still achieve this advice's ultimate goal.
-              (find-file-name-handler buffer-file-name
-                                      'make-auto-save-file-name))
-             buffer-file-name
-           (sha1 buffer-file-name))))
-    (funcall fn)))
-
-;; HACK: ...does the same for Emacs backup files, but also packages that use
-;;   `make-backup-file-name-1' directly (like undo-tree).
+;; HACK: Make sure backup files (like undo-tree's) don't have ridiculously long
+;;   file names that some filesystems will refuse.
+;; REVIEW: PR this upstream, like they have with the UNIQUIFY argument in
+;;   `auto-save-file-name-transforms' entries.
 (defadvice! doom-make-hashed-backup-file-name-a (fn file)
   "A few places use the backup file name so paths don't get too long."
   :around #'make-backup-file-name-1
@@ -280,7 +280,7 @@ tell you about it. Very annoying. This prevents that."
 
 
 ;;;###package bookmark
-(setq bookmark-default-file (concat doom-data-dir "bookmarks"))
+(setq bookmark-default-file (concat doom-profile-data-dir "bookmarks"))
 
 
 (use-package! recentf
@@ -288,7 +288,7 @@ tell you about it. Very annoying. This prevents that."
   :defer-incrementally easymenu tree-widget timer
   :hook (doom-first-file . recentf-mode)
   :commands recentf-open-files
-  :custom (recentf-save-file (concat doom-cache-dir "recentf"))
+  :custom (recentf-save-file (concat doom-profile-cache-dir "recentf"))
   :config
   (setq recentf-auto-cleanup nil     ; Don't. We'll auto-cleanup on shutdown
         recentf-max-saved-items 200) ; default is 20
@@ -329,7 +329,7 @@ tell you about it. Very annoying. This prevents that."
   ;; persist variables across sessions
   :defer-incrementally custom
   :hook (doom-first-input . savehist-mode)
-  :custom (savehist-file (concat doom-cache-dir "savehist"))
+  :custom (savehist-file (concat doom-profile-cache-dir "savehist"))
   :config
   (setq savehist-save-minibuffer-history t
         savehist-autosave-interval nil     ; save on kill only
@@ -363,7 +363,7 @@ the unwritable tidbits."
 (use-package! saveplace
   ;; persistent point location in buffers
   :hook (doom-first-file . save-place-mode)
-  :custom (save-place-file (concat doom-cache-dir "saveplace"))
+  :custom (save-place-file (concat doom-profile-cache-dir "saveplace"))
   :config
   (defadvice! doom--recenter-on-load-saveplace-a (&rest _)
     "Recenter on cursor when loading a saved place."

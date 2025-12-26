@@ -6,7 +6,7 @@
 
 (package! gptel-quick
   :recipe (:host github :repo "karthink/gptel-quick")
-  :pin "495b5e0b5348dbced1448bd12cbf8847e30b5175")
+  :pin "018ff2be8f860a1e8fe3966eec418ad635620c38")
 
 (when (modulep! :tools magit)
   (package! gptel-magit

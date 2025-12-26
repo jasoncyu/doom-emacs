@@ -1,21 +1,12 @@
 ;;; emacs/tramp/config.el -*- lexical-binding: t; -*-
 
-;; Prefix tramp autosaves to prevent conflicts with local ones
-(cl-pushnew (list "\\`/[^/]*:\\([^/]*/\\)*\\([^/]*\\)\\'"
-                  (concat auto-save-list-file-prefix "tramp-\\2") t)
-            auto-save-file-name-transforms
-            :test #'equal)
-
-
 (after! tramp
   (setq remote-file-name-inhibit-cache 60
         remote-file-name-inhibit-locks t
         remote-file-name-inhibit-auto-save-visited t
         tramp-copy-size-limit (* 1024 1024) ; 1mb
         tramp-use-scp-direct-remote-copying t
-        tramp-completion-reread-directory-timeout 60
-        tramp-backup-directory-alist backup-directory-alist
-        tramp-auto-save-directory  (concat doom-cache-dir "tramp-autosave/"))
+        tramp-completion-reread-directory-timeout 60)
 
   (unless (featurep :system 'windows)
     ;; On windows pscp/scp > ssh, everywhere else ssh is better. sshx is even
