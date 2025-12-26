@@ -28,7 +28,8 @@ overrides `completion-styles' during company completion sessions.")
                   (car args))
           (cdr args)))
   :config
-  (setq vertico-resize nil
+  ;; allowing shrinking flickers when candidates count decrease
+  (setq vertico-resize 'grow-only
         vertico-count 17
         vertico-cycle t)
   ;; Emacs 28 and newer: Hide commands in M-x which do not work in the current
@@ -145,8 +146,9 @@ orderless."
         consult-line-numbers-widen t
         consult-async-min-input 2
         consult-async-refresh-delay  0.15
-        consult-async-input-throttle 0.2
-        consult-async-input-debounce 0.1
+        ;; higher values helps avoid exiting the posframe for search
+        consult-async-input-throttle 0.5
+        consult-async-input-debounce 0.2
         consult-fd-args
         '((if (executable-find "fdfind" 'remote) "fdfind" "fd")
           "--color=never"
@@ -352,7 +354,10 @@ orderless."
   :when (modulep! +childframe)
   :hook (vertico-mode . vertico-posframe-mode)
   :config
-  (setq vertico-posframe-poshandler #'posframe-poshandler-frame-center)
+  (setq vertico-posframe-width 160)
+  ;; (setq vertico-posframe-poshandler #'posframe-poshandler-frame-center)
+  ;; Fix keys exiting SPC s p search frame
+  (setq resize-mini-frames 'grow-only)
   (add-hook 'doom-after-reload-hook #'posframe-delete-all))
 
 ;; From https://github.com/minad/vertico/wiki#candidate-display-transformations-custom-candidate-highlighting
