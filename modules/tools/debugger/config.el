@@ -12,6 +12,8 @@
   (setq dape-buffer-window-arrangement 'right
         dape-inlay-hints t
         dape-cwd-function #'+debugger-dape-cwd-function-fn)
+  ;; Allow multi-windows from dape
+  (set-popup-rule! "^\\*dape" :ignore t)
 
   ;; REVIEW: Remove when projectile is replaced with project.el
   (defun +debugger-dape-cwd-function-fn ()
