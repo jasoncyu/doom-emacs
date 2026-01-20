@@ -285,6 +285,7 @@
   :defer t)
 
 (with-eval-after-load 'lsp-mode
+  (setq lsp-disabled-clients '(pylsp pyls))
   (lsp-register-client
    (make-lsp-client :new-connection (lsp-tramp-connection "ty server")
                     :major-modes '(python-mode)

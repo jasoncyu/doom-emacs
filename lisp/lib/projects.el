@@ -157,6 +157,8 @@ If DIR is not a project, it will be indexed (but not cached)."
           ((and (bound-and-true-p ivy-mode)
                 (fboundp 'counsel-file-jump))
            (call-interactively #'counsel-file-jump))
+          ((and (doom-module-active-p :completion 'vertico))
+           (call-interactively #'+vertico/consult-fd-or-find))
           ((and (bound-and-true-p helm-mode)
                 (fboundp 'helm-find-files))
            (call-interactively #'helm-find-files))

@@ -240,7 +240,7 @@
         (sp-local-pair "{-#" "#-")
         (sp-local-pair "{-@" "@-")))
 
-    ;; Don't close parens in strings
+    ;; Don't close parens in strings. Use this line OR instead do C-q ( to avoid auto-close behavior
     (sp-local-pair 'prog-mode "(" ")" :unless '(sp-in-string-p))
     (after! smartparens-python
       (sp-with-modes '(python-mode python-ts-mode)
