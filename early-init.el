@@ -26,6 +26,9 @@
 ;;
 ;;; Code:
 
+;; For emacs-plus cask working
+(setenv "LIBRARY_PATH" "/Applications/Emacs.app/Contents/Frameworks")
+(setenv "LD_LIBRARY_PATH" "/Applications/Emacs.app/Contents/Frameworks")
 ;; PERF: Garbage collection is a big contributor to startup times in both
 ;;   interactive and CLI sessions, so I defer it.
 (if noninteractive  ; in CLI sessions

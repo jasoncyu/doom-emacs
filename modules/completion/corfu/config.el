@@ -48,14 +48,6 @@ If any return non-nil, `corfu-auto' will not invoke as-you-type completion.")
                gud-mode
                vterm-mode)
           t)
-        corfu-auto-delay
-        global-corfu-modes
-        '((not erc-mode
-               circe-mode
-               help-mode
-               gud-mode
-               vterm-mode)
-          t)
         corfu-cycle t
         ;; Keep at prompt rather than first: That way if you press enter it's
         ;; always what you typed and not
