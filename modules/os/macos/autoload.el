@@ -86,3 +86,35 @@
   ;; (shell-command (format "kitty @ launch --type tab --cwd %s" (shell-quote-argument default-directory)))
   ;; Focus Kitty
   (shell-command "open -a Kitty"))
+
+;;;###autoload
+(defun +macos/open-current-file-in-app ()
+  "Open the current buffer's file in a chosen application, with Consult autocompletion.
+Strips .app extension from displayed and executed app names.
+Prints the shell command for debugging.
+More robustly finds application paths."
+  (interactive)
+  (let ((current-file (buffer-file-name)))
+    (when current-file
+      (let* ((apps-dirs '("/Applications/" "/System/Applications/"))
+             ;; Collect all .app files and derive their base names
+             (all-app-files (cl-loop for app-dir in apps-dirs
+                                     append (directory-files app-dir nil "\\.app$")))
+             (app-names-without-ext (mapcar (lambda (app-file)
+                                              (s-chop-suffix ".app" app-file)
+                                              )
+                                            all-app-files))
+             (selected-app-base-name))
+
+        (setq selected-app-base-name
+              (completing-read "Open with application: "
+                               app-names-without-ext
+                               nil t nil nil " "))
+
+        (when (and selected-app-base-name (not (string-empty-p selected-app-base-name)))
+          (shell-command
+           (format "open -a '%s' '%s'"
+                   ;; Use the base name for 'open -a'
+                   (replace-regexp-in-string "'" "'\\''" selected-app-base-name)
+                   (replace-regexp-in-string "'" "'\\''" current-file))))))))
+

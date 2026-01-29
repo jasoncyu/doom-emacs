@@ -251,8 +251,9 @@
         :desc "Toggle eshell popup"           "e" #'+eshell/toggle
         :desc "Open eshell here"              "E" #'+eshell/here)
        (:when (modulep! :os macos)
-        :desc "Reveal in Finder"           "o" #'+macos/reveal-in-finder
-        :desc "Reveal project in Finder"   "O" #'+macos/reveal-project-in-finder
+         :desc "Open in app"                "o" #'+macos/open-current-file-in-app
+         :desc "Reveal in Finder"           "f" #'+macos/reveal-in-finder
+         :desc "Reveal project in Finder"   "F" #'+macos/reveal-project-in-finder
         (:prefix ("s" . "send to application")
          :desc "Send to Transmit"           "t" #'+macos/send-to-transmit
          :desc "Send project to Transmit"   "T" #'+macos/send-project-to-transmit
