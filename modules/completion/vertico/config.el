@@ -363,7 +363,12 @@ orderless."
 
 (use-package! vertico-posframe
   :when (modulep! +childframe)
-  :hook (vertico-mode . vertico-posframe-mode))
+  :hook (vertico-mode . vertico-posframe-mode)
+  :config
+  (setq vertico-posframe-width 160)
+  ;; (setq vertico-posframe-poshandler #'posframe-poshandler-frame-center)
+  ;; Fix keys exiting SPC s p search frame
+  (setq resize-mini-frames 'grow-only))
 
 
 ;; From https://github.com/minad/vertico/wiki#candidate-display-transformations-custom-candidate-highlighting
@@ -405,16 +410,10 @@ orderless."
                  (+vertico-transform-functions . +vertico-highlight-directory-fn)))
   (add-to-list 'vertico-multiform-commands
                '(execute-extended-command
-<<<<<<< variant A
-                 (+vertico-transform-functions . +vertico-highlight-enabled-mode)))
+                 (+vertico-transform-functions . +vertico-highlight-enabled-mode-fn)))
   (add-to-list 'vertico-multiform-commands
                '(org-set-effort
                 (vertico-sort-function . vertico-sort-alpha)))
   (add-to-list 'vertico-multiform-commands
                '(jason--clock-in-hook
                 (vertico-sort-function . vertico-sort-alpha))))
->>>>>>> variant B
-                 (+vertico-transform-functions . +vertico-highlight-enabled-mode-fn))))
-####### Ancestor
-                 (+vertico-transform-functions . +vertico-highlight-enabled-mode))))
-======= end
