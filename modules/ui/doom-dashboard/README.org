@@ -3,6 +3,12 @@
 #+created:  February 20, 2017
 #+since:    2.0.0
 
+#+begin_quote
+  *This module is deprecated* in favor of the [[doom-module::ui dashboard]] module,
+    which is a rewrite of this module. This module will be in maintenance mode
+    until it is eventually removed.
+#+end_quote
+
 * Description :unfold:
 This module adds a minimalistic, Atom-inspired dashboard to Emacs.
 

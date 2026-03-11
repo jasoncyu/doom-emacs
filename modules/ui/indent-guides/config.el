@@ -14,12 +14,19 @@ be enabled. If any function returns non-nil, the mode will not be activated."
 
 (use-package! indent-bars
   :unless noninteractive
-  :hook ((prog-mode text-mode conf-mode) . +indent-guides-init-maybe-h)
+  :hook (doom-first-buffer . +indent-guides-startup-h)
   :init
+  (defun +indent-guides-startup-h ()
+    "Set up indent-bars to activate after startup."
+    (add-hook 'after-change-major-mode-hook #'+indent-guides-init-maybe-h))
+
   (defun +indent-guides-init-maybe-h ()
     "Enable `indent-bars-mode' depending on `+indent-guides-inhibit-functions'."
-    (unless (run-hook-with-args-until-success '+indent-guides-inhibit-functions)
+    (unless (or (eq major-mode 'fundamental-mode)
+                (doom-temp-buffer-p (current-buffer))
+                (run-hook-with-args-until-success '+indent-guides-inhibit-functions))
       (indent-bars-mode +1)))
+
   :config
   (setq indent-bars-treesit-support (modulep! :tools tree-sitter)
         indent-bars-prefer-character
@@ -50,25 +57,21 @@ be enabled. If any function returns non-nil, the mode will not be activated."
     (add-hook 'doom-load-theme-hook #'indent-bars-reset-styles))
 
   (add-hook! '+indent-guides-inhibit-functions
+    ;; Buffers that may have special fontification or may be invisible to the
+    ;; user. Particularly src blocks, org agenda, or special modes like magit.
+    (defun +indent-guides-in-special-buffers-p ()
+      (and (not (derived-mode-p 'text-mode 'prog-mode 'conf-mode))
+           (or buffer-read-only
+               (bound-and-true-p cursor-intangible-mode)
+               (doom-special-buffer-p (current-buffer) t))))
     ;; Org's virtual indentation messes up indent-guides.
     (defun +indent-guides-in-org-indent-mode-p ()
       (bound-and-true-p org-indent-mode))
-    ;; Fix #6438: indent-guides prevent inline images from displaying in ein
-    ;; notebooks.
-    (defun +indent-guides-in-ein-notebook-p ()
-      (and (bound-and-true-p ein:notebook-mode)
-           (bound-and-true-p ein:output-area-inlined-images)))
     ;; Don't display indent guides in childframe popups (which are almost always
     ;; used for completion or eldoc popups).
     ;; REVIEW: Swap with `frame-parent' when 27 support is dropped
     (defun +indent-guides-in-childframe-p ()
-      (frame-parameter nil 'parent-frame))
-    ;; indent-guides in src blocks can cause syntax highlighting to fail
-    ;; abruptly for some major modes (particularly *-ts-modes or rustic-mode).
-    ;; Since it's already working on the super org buffer, it's redundant to let
-    ;; it work on the contents of each babel block.
-    (defun +indent-guides-in-org-src-block-p ()
-      (string-prefix-p " *org-src-fontification:" (buffer-name))))
+      (frame-parameter nil 'parent-frame)))
 
   ;; HACK: The way `indent-bars-display-on-blank-lines' functions, it places
   ;;   text properties with a display property containing a newline, which

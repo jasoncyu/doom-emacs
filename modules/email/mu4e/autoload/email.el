@@ -21,7 +21,7 @@ DEFAULT-P is a boolean. If non-nil, it marks that email account as the
 default/fallback account."
   (after! mu4e
     (when (version< mu4e-mu-version "1.4")
-      (when-let (address (cdr (assq 'user-mail-address letvars)))
+      (when-let* ((address (cdr (assq 'user-mail-address letvars))))
         (add-to-list 'mu4e-user-mail-address-list address)))
     ;; remove existing context with same label
     (setq mu4e-contexts
@@ -100,7 +100,7 @@ default/fallback account."
 (defun +mu4e/compose ()
   "Compose a new email."
   (interactive)
-  ;; TODO Interactively select email account
+  ;; TODO: Interactively select email account
   (call-interactively #'mu4e-compose-new))
 
 (defun +mu4e--get-string-width (str)
@@ -279,7 +279,7 @@ attach a file, or select a folder to open dired in and select file attachments
 (using `dired-mu4e-attach-ctrl-c-ctrl-c').
 
 When otherwise called, open a dired buffer and enable `dired-mu4e-attach-ctrl-c-ctrl-c'."
-  ;; TODO add ability to attach files (+dirs) as a single (named) archive
+  ;; TODO: add ability to attach files (+dirs) as a single (named) archive
   (interactive "p")
   (pcase major-mode
     ((or 'mu4e-compose-mode 'org-msg-edit-mode)
@@ -376,10 +376,10 @@ When otherwise called, open a dired buffer and enable `dired-mu4e-attach-ctrl-c-
 within a context, set `user-mail-address' to an alias found in the 'To' or
 'From' headers of the parent message if present, or prompt the user for a
 preferred alias"
-  (when-let ((addresses (if (or mu4e-contexts +mu4e-personal-addresses)
-                            (and (> (length +mu4e-personal-addresses) 1)
-                                 +mu4e-personal-addresses)
-                          (mu4e-personal-addresses))))
+  (when-let* ((addresses (if (or mu4e-contexts +mu4e-personal-addresses)
+                             (and (> (length +mu4e-personal-addresses) 1)
+                                  +mu4e-personal-addresses)
+                           (mu4e-personal-addresses))))
     (setq user-mail-address
           (if mu4e-compose-parent-message
               (if (version<= "1.8" mu4e-mu-version)

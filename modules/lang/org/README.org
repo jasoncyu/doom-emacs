@@ -139,10 +139,6 @@ https://www.mfoot.com/blog/2015/11/22/literate-emacs-configuration-with-org-mode
   - [[doom-package:ob-ammonite]]
 - [[doom-module::os macos]]
   - [[doom-package:org-mac-link]]
-- [[doom-module::tools magit]]
-  - [[doom-package:orgit]]
-- [[doom-module::tools pdf]]
-  - [[doom-package:org-pdftools]]
 
 ** Hacks
 - Adds support for a ~:sync~ parameter for org src blocks. This overrides
@@ -161,7 +157,7 @@ https://www.mfoot.com/blog/2015/11/22/literate-emacs-configuration-with-org-mode
   rather than cycle through it recursively. This can be reversed with:
 
   #+begin_src emacs-lisp
-  (after! evil-org
+  (with-eval-after-load 'evil-org
     (remove-hook 'org-tab-first-hook #'+org-cycle-only-current-subtree-h))
   #+end_src
 - (Evil users) Nearby tables are formatted when exiting insert or replace mode
@@ -251,11 +247,11 @@ They are (with examples):
 
 - ~doom-docs:index.org~ -> =~/.emacs.d/docs/%s=
 - ~doom-modules:editor/evil/README.org~ -> =~/.emacs.d/modules/%s=
-- ~doom-repo:issues~ -> =https://github.com/hlissner/doom-emacs/%s=
+- ~doom-repo:issues~ -> =https://github.com/doomemacs/doomemacs/%s=
 - ~doom:core/core.el~ -> =~/.emacs.d/%s=
 - ~duckduckgo:search terms~
 - ~gimages:search terms~ (Google Images)
-- ~github:hlissner/doom-emacs~
+- ~github:doomemacs/doomemacs~
 - ~gmap:Toronto, Ontario~ (Google Maps)
 - ~google:search terms~
 - ~kagi:search terms~

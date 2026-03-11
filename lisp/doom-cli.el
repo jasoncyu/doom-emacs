@@ -13,7 +13,7 @@
   :group 'doom)
 
 (defcustom doom-cli-load-path
-  (append (when-let ((doompath (getenv "DOOMPATH")))
+  (append (when-let* ((doompath (getenv "DOOMPATH")))
             (cl-loop for dir in (split-string doompath path-separator)
                      collect (expand-file-name dir)))
           (list (file-name-concat (dir!) "cli")))
@@ -354,9 +354,9 @@ Returned in the order they will execute. Includes pseudo CLIs."
       (push (cons :before path) results))
     (push '(:before) results)
     (dolist (result results (nreverse clis))
-      (when-let ((cli (doom-cli-get result t))
-                 ((or (not nopartials?)
-                      (doom-cli-type cli))))
+      (when-let* ((cli (doom-cli-get result t))
+                  ((or (not nopartials?)
+                       (doom-cli-type cli))))
         (cl-pushnew cli clis
                     :test #'equal
                     :key #'doom-cli-key)))))
@@ -432,9 +432,9 @@ Return nil if CLI (a `doom-cli') has no explicit documentation."
     ;; Populate options
     (let ((options (doom-cli-context-options context)))
       (dolist (opt optspec)
-        (when-let (option (cl-loop for flag in (doom-cli-option-switches opt)
-                                   if (cdr (assoc flag options))
-                                   return (cons flag it)))
+        (when-let* ((option (cl-loop for flag in (doom-cli-option-switches opt)
+                                     if (cdr (assoc flag options))
+                                     return (cons flag it))))
           (unless (member (car option) seen)
             (setf (alist-get (doom-cli-option-symbol opt) alist)
                   (cdr option))
@@ -467,7 +467,7 @@ Return nil if CLI (a `doom-cli') has no explicit documentation."
                                 (buffer-string))))
                       (&rest    . ,rest)
                       (&whole   . ,(doom-cli-context-whole context))))
-        (when-let (var (car (alist-get (car type) argspec)))
+        (when-let* ((var (car (alist-get (car type) argspec))))
           (setf (alist-get var alist) (cdr type)))))
     alist))
 
@@ -570,7 +570,7 @@ Throws `doom-cli-invalid-option-error' for illegal values."
             errors)
         (catch 'done
           (dolist (type types)
-            ;; REVIEW Use pcase-let + map.el when 27.x support is dropped
+            ;; REVIEW: Use pcase-let + map.el when 27.x support is dropped
             (cl-destructuring-bind (&key test read error &allow-other-keys)
                 (if (or (symbolp type)
                         (and (stringp type)
@@ -728,9 +728,9 @@ executable context."
   "Restore the last restarted context from FILE into CONTEXT."
   (when (and (stringp file)
              (file-exists-p file))
-    (when-let (old-context (with-temp-buffer
-                             (insert-file-contents file)
-                             (read (current-buffer))))
+    (when-let* ((old-context (with-temp-buffer
+                               (insert-file-contents file)
+                               (read (current-buffer)))))
       (unless (doom-cli-context-p old-context)
         (error "An invalid context was restored from file: %s" file))
       (unless (equal (doom-cli-context-prefix context)
@@ -956,7 +956,7 @@ considered as well."
 
 (defun doom-cli-debugger (type data &optional context)
   "Print a more presentable backtrace to terminal and write it to file."
-  ;; HACK Works around a heuristic in eval.c for detecting errors in the
+  ;; HACK: Works around a heuristic in eval.c for detecting errors in the
   ;;   debugger, which executes this handler again on subsequent calls. Taken
   ;;   from `ert--run-test-debugger'.
   (cl-incf num-nonmacro-input-events)
@@ -1022,7 +1022,7 @@ considered as well."
                                           doom-print-indent
                                           1)
                                        "..."))))
-            (when-let (backtrace-file (doom-backtrace-write-to-file backtrace error-file))
+            (when-let* ((backtrace-file (doom-backtrace-write-to-file backtrace error-file)))
               (print! (warn "Wrote extended backtrace to %s")
                       (path backtrace-file))))))))
     (exit! 255)))
@@ -1186,7 +1186,7 @@ Emacs' batch library lacks an implementation of the exec system call."
                 ,(cl-loop for (var . val) in persisted-env
                           if (<= (length val) 2048)  ; Prevent "Argument list too long" errors
                           concat (format "%s=%s \\\n" var (shell-quote-argument val))
-                          else do (doom-log 1 "restart: wiscarding envvar %S for being too long (%d)" var (length val)))
+                          else do (doom-log 1 "restart: discarding envvar %S for being too long (%d)" var (length val)))
                 ,(format "PATH=\"%s%s$PATH\" \\\n"
                          (doom-path doom-emacs-dir "bin")
                          path-separator)
@@ -1351,9 +1351,9 @@ ARGS are options passed to less. If DOOMPAGER is set, ARGS are ignored."
          0)))
    context))
 
-;; (defun doom-cli--exit-editor (args context))  ; TODO Launch $EDITOR
+;; (defun doom-cli--exit-editor (args context))  ; TODO: Launch $EDITOR
 
-;; (defun doom-cli--exit-emacs (args context))   ; TODO Launch Emacs subsession
+;; (defun doom-cli--exit-emacs (args context))   ; TODO: Launch Emacs subsession
 
 
 
@@ -1432,7 +1432,13 @@ ARGS are options passed to less. If DOOMPAGER is set, ARGS are ignored."
   (or (when-let* ((path (doom-cli-autoload cli))
                   (path (locate-file-internal path doom-cli-load-path load-suffixes)))
         (doom-log "load: autoload %s" path)
-        (let ((doom-cli--group-plist (doom-cli-plist cli)))
+        (let ((doom-cli--group-plist
+               ;; FIX(#8560): Don't inherit :hide from the autoload stub's
+               ;;   plist, because alias stubs have :hide t, and that would
+               ;;   propagate to the primary command when the file is loaded.
+               (let ((p (copy-sequence (doom-cli-plist cli))))
+                 (cl-remf p :hide)
+                 p)))
           (doom-load path))
         (let* ((key (doom-cli-key cli))
                (cli (gethash key doom-cli--table)))
@@ -1984,7 +1990,7 @@ errors to `doom-cli-error-file')."
 
 (defalias 'sh!! #'doom-exec-process)
 
-;; TODO Make `git!' into a more sophisticated wrapper around git
+;; TODO: Make `git!' into a more sophisticated wrapper around git
 (defalias 'git! (doom-partial #'straight--process-run "git"))
 
 (defun get! (key) (doom-cli-context-get doom-cli--context key))
@@ -2102,7 +2108,7 @@ substring is edited more than once."
         current))))
 
 ;;; Help: printers
-;; TODO Parameterize optional args with `cl-defun'
+;; TODO: Parameterize optional args with `cl-defun'
 (defun doom-cli-help--print (cli context &optional manpage? noglobal?)
   "Write CLI's documentation in a manpage-esque format to stdout."
   (let-alist (doom-cli-help cli)
@@ -2112,7 +2118,7 @@ substring is edited more than once."
                                         (width (floor (/ (- (doom-cli-context-width context)
                                                             (length title))
                                                          2.0))))
-                                   ;; FIXME Who am I fooling?
+                                   ;; FIXME: Who am I fooling?
                                    (format (format "%%-%ds%%s%%%ds" width width)
                                            "DOOM(1)" title "DOOM(1)")))
                       ("NAME" . ,(concat .command " - " .summary))
@@ -2285,7 +2291,7 @@ The alist's CAR are lists of formatted switches plus their arguments, e.g.
                                else collect (list (format strfmt switch)))
                       (string-join
                        (or (delq
-                            nil (cons (when-let (docs (doom-cli-option-docs option))
+                            nil (cons (when-let* ((docs (doom-cli-option-docs option)))
                                         (concat docs "."))
                                       (cl-loop for (flags . docs) in docs
                                                unless (equal (seq-difference flags switches) flags)
@@ -2344,7 +2350,7 @@ The alist's CAR are lists of formatted switches plus their arguments, e.g.
   (cl-check-type section-name string)
   (let (alist)
     (dolist (cli cli-list (nreverse alist))
-      (when-let (section (cdr (assoc section-name (doom-cli-docs cli))))
+      (when-let* ((section (cdr (assoc section-name (doom-cli-docs cli)))))
         (with-temp-buffer
           (save-excursion (insert section))
           (let ((lead (current-indentation))

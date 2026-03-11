@@ -44,7 +44,7 @@
                (concat "mbsync --all"
                        ;; XDG support was added to isync 1.5, but this lets
                        ;; users on older benefit from it sooner.
-                       (when-let (file (file-exists-p! "isyncrc" (or (getenv "XDG_CONFIG_HOME") "~/.config")))
+                       (when-let* ((file (file-exists-p! "isyncrc" (or (getenv "XDG_CONFIG_HOME") "~/.config"))))
                          (format " --config %S" file)))
                mu4e-change-filenames-when-moving t))
         ((or (modulep! +offlineimap)
@@ -180,7 +180,7 @@ is non-nil."
   (add-to-list 'mu4e-bookmarks
                '("flag:flagged" "Flagged messages" ?f) t)
 
-  ;; TODO avoid assuming that nerd-icons is present
+  ;; TODO: avoid assuming that nerd-icons is present
   (defvar +mu4e-header-colorized-faces
     '(nerd-icons-green
       nerd-icons-lblue
@@ -189,9 +189,6 @@ is non-nil."
       nerd-icons-purple
       nerd-icons-yellow)
     "Faces to use when coloring folders and account stripes.")
-
-  (defvar +mu4e-min-header-frame-width 120
-    "Minimum reasonable with for the header view.")
 
   ;; Add a column to display what email account the email belongs to,
   ;; and an account color stripe column
@@ -262,20 +259,6 @@ is non-nil."
             (end-of-line)
             (insert (read-string "Subject (optional): "))
             (message "Sending..."))))))
-
-  ;; The header view needs a certain amount of horizontal space to actually show
-  ;; you all the information you want to see so if the header view is entered
-  ;; from a narrow frame, it's probably worth trying to expand it
-  (defvar +mu4e-min-header-frame-width 120
-    "Minimum reasonable with for the header view.")
-  (add-hook! 'mu4e-headers-mode-hook
-    (defun +mu4e-widen-frame-maybe ()
-      "Expand the mu4e-headers containing frame's width to `+mu4e-min-header-frame-width'."
-      (dolist (frame (frame-list))
-        (when (and (string= (buffer-name (window-buffer (frame-selected-window frame)))
-                            mu4e-headers-buffer-name)
-                   (< (frame-width) +mu4e-min-header-frame-width))
-          (set-frame-width frame +mu4e-min-header-frame-width)))))
 
   ;; Fix columns misalignment in Headers buffers
   (add-hook! 'mu4e-headers-mode-hook
@@ -615,7 +598,7 @@ See `+mu4e-msg-gmail-p' and `mu4e-sent-messages-behavior'.")
 
     ;; don't save message to Sent Messages, Gmail/IMAP takes care of this
     (setq mu4e-sent-messages-behavior
-          (lambda () ;; TODO make use +mu4e-msg-gmail-p
+          (lambda () ;; TODO: make use +mu4e-msg-gmail-p
             (if (or (string-match-p "@gmail.com\\'" (message-sendmail-envelope-from))
                     (member (message-sendmail-envelope-from)
                             (mapcar #'car +mu4e-gmail-accounts)))

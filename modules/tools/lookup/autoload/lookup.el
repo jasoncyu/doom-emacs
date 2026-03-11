@@ -292,7 +292,7 @@ framework (ivy, helm, vertico, etc), otherwise falling back to
                 ;; Only do this with paths that contain segments, to reduce
                 ;; false positives.
                 (string-match-p "/" guess)
-                (when-let ((dir (locate-dominating-file default-directory guess)))
+                (when-let* ((dir (locate-dominating-file default-directory guess)))
                   (when (file-in-directory-p dir (doom-project-root))
                     (find-file (doom-path dir guess))
                     t))))
@@ -321,7 +321,7 @@ the browser."
               (bug-reference-fontify (line-beginning-position) (line-end-position))
               (dolist (o (overlays-at (point)))
                 ;; It should only be possible to have one URL overlay.
-                (when-let (url (overlay-get o 'bug-reference-url))
+                (when-let* ((url (overlay-get o 'bug-reference-url)))
                   (browse-url url)
 
                   (throw 'found t)))))
@@ -446,7 +446,7 @@ Otherwise, falls back on `find-file-at-point'."
 (defun +lookup/synonyms (identifier &optional _arg)
   "Look up and insert a synonym for the word at point (or selection)."
   (interactive
-   (list (doom-thing-at-point-or-region 'word) ; TODO actually use this
+   (list (doom-thing-at-point-or-region 'word) ; TODO: actually use this
          current-prefix-arg))
   (message "Looking up synonyms for %S" identifier)
   (cond ((and +lookup-dictionary-prefer-offline

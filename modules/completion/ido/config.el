@@ -11,15 +11,14 @@
   :hook (doom-first-input . ido-mode)
   :hook (ido-mode . ido-ubiquitous-mode)
   :preface
-  ;; HACK `ido' is a really old package. It defines `ido-mode' manually and
-  ;;      doesn't define a hook, so we define one for it, so we can use it!
+  ;; HACK: `ido' is a really old package. It defines `ido-mode' manually and
+  ;;   doesn't define a hook, so we define one for it, so we can use it!
   (defadvice! +ido-run-hooks-a (&rest _)
     :after #'ido-mode
     (run-hooks 'ido-mode-hook))
   :init
   (setq ido-save-directory-list-file (file-name-concat doom-profile-cache-dir "ido.last"))
   :config
-  (pushnew! ido-ignore-files "\\`.DS_Store$" "Icon\\?$")
   (setq ido-ignore-buffers
         '("\\` " "^\\*ESS\\*" "^\\*Messages\\*" "^\\*[Hh]elp" "^\\*Buffer"
           "^\\*.*Completions\\*$" "^\\*Ediff" "^\\*tramp" "^\\*cvs-" "_region_"
@@ -30,6 +29,9 @@
         ido-create-new-buffer 'always
         ido-enable-flex-matching t
         ido-everywhere t)
+
+  (add-to-list 'ido-ignore-files "\\`.DS_Store$")
+  (add-to-list 'ido-ignore-files "Icon\\?$")
 
   (map! :map (ido-common-completion-map ido-file-completion-map)
         "C-w"  #'ido-delete-backward-word-updir

@@ -64,6 +64,9 @@ Is relative to `org-directory', unless it is absolute. Is used in Doom's default
 (defvar +org-habit-graph-window-ratio 0.3
   "The ratio of the consistency graphs relative to the window width.")
 
+(defvar +org-preview-dir (doom-path doom-profile-cache-dir "org/previews/")
+  "Where link preview images are cached.")
+
 (defvar +org-startup-with-animated-gifs nil
   "If non-nil, and the cursor is over a gif inline-image preview, animate it!")
 
@@ -140,9 +143,12 @@ Is relative to `org-directory', unless it is absolute. Is used in Doom's default
 
   (plist-put org-format-latex-options :scale 1.5) ; larger previews
 
-  ;; HACK Face specs fed directly to `org-todo-keyword-faces' don't respect
-  ;;      underlying faces like the `org-todo' face does, so we define our own
-  ;;      intermediary faces that extend from org-todo.
+  ;; HACK: Face specs fed directly to `org-todo-keyword-faces' don't respect
+  ;;   underlying faces like the `org-todo' face does, so we define our own
+  ;;   intermediary faces that extend from org-todo.
+  ;; REVIEW: On one hand, this config is too opinionated, on the other, these
+  ;;   are the most commonly reconfigured variables in Org so they don't step on
+  ;;   many toes. Consider either removing or simplifying this!
   (with-no-warnings
     (custom-declare-face '+org-todo-active  '((t (:inherit (bold font-lock-constant-face org-todo)))) "")
     (custom-declare-face '+org-todo-project '((t (:inherit (bold font-lock-doc-face org-todo)))) "")
@@ -289,8 +295,8 @@ Also adds support for a `:sync' parameter to override `:async'."
                ;; buffer where `buffer-file-name' is nil).
                (string-match-p "^ \\*temp" (buffer-name)))
         (save-excursion
-          (when-let ((beg (org-babel-where-is-src-block-result))
-                     (end (progn (goto-char beg) (forward-line) (org-babel-result-end))))
+          (when-let* ((beg (org-babel-where-is-src-block-result))
+                      (end (progn (goto-char beg) (forward-line) (org-babel-result-end))))
             (org-display-inline-images nil nil (min beg end) (max beg end))))))))
 
 
@@ -407,8 +413,8 @@ I like:
       (when (bound-and-true-p org-capture-is-refiling)
         (save-buffer))))
 
-  ;; HACK Doom doesn't support `customize'. Best not to advertise it as an
-  ;;      option in `org-capture's menu.
+  ;; HACK: Doom doesn't support `customize'. Best not to advertise it as an
+  ;;   option in `org-capture's menu.
   (defadvice! +org--remove-customize-option-a (fn table title &optional prompt specials)
     :around #'org-mks
     (funcall fn table title prompt
@@ -469,7 +475,7 @@ relative to `org-directory', unless it is an absolute path."
       (add-to-list 'projectile-globally-ignored-directories org-attach-id-dir)))
 
   ;; Add inline image previews for attachment links
-  (org-link-set-parameters "attachment" :image-data-fun #'+org-image-file-data-fn))
+  (org-link-set-parameters "attachment" :preview #'+org-preview-image-file-fn))
 
 
 (defun +org-init-custom-links-h ()
@@ -489,19 +495,19 @@ relative to `org-directory', unless it is an absolute path."
                     '(warning org-link))))
 
   ;; Additional custom links for convenience
-  (pushnew! org-link-abbrev-alist
-            '("github"      . "https://github.com/%s")
-            '("youtube"     . "https://youtube.com/watch?v=%s")
-            '("google"      . "https://google.com/search?q=")
-            '("gimages"     . "https://google.com/images?q=%s")
-            '("gmap"        . "https://maps.google.com/maps?q=%s")
-            '("kagi"        . "https://kagi.com/search?q=%s")
-            '("duckduckgo"  . "https://duckduckgo.com/?q=%s")
-            '("wikipedia"   . "https://en.wikipedia.org/wiki/%s")
-            '("wolfram"     . "https://wolframalpha.com/input/?i=%s")
-            '("doom-repo"   . "https://github.com/doomemacs/doomemacs/%s")
-            `("emacsdir"    . ,(doom-path doom-emacs-dir "%s"))
-            `("doomdir"     . ,(doom-path doom-user-dir "%s")))
+  (dolist (abbrev `(("github"      . "https://github.com/%s")
+                    ("youtube"     . "https://youtube.com/watch?v=%s")
+                    ("google"      . "https://google.com/search?q=")
+                    ("gimages"     . "https://google.com/images?q=%s")
+                    ("gmap"        . "https://maps.google.com/maps?q=%s")
+                    ("kagi"        . "https://kagi.com/search?q=%s")
+                    ("duckduckgo"  . "https://duckduckgo.com/?q=%s")
+                    ("wikipedia"   . "https://en.wikipedia.org/wiki/%s")
+                    ("wolfram"     . "https://wolframalpha.com/input/?i=%s")
+                    ("doom-repo"   . "https://github.com/doomemacs/doomemacs/%s")
+                    ("emacsdir"    . ,(doom-path doom-emacs-dir "%s"))
+                    ("doomdir"     . ,(doom-path doom-user-dir "%s"))))
+    (add-to-list 'org-link-abbrev-alist abbrev))
 
   (+org-define-basic-link "org" 'org-directory)
   (+org-define-basic-link "doom" 'doom-emacs-dir)
@@ -604,11 +610,12 @@ relative to `org-directory', unless it is an absolute path."
   ;; documentation -- especially Doom's!
 
   ;; Allow inline image previews of http(s)? urls or data uris.
-  ;; `+org-http-image-data-fn' will respect `org-display-remote-inline-images'.
+  ;; `+org-link-preview-image-url-fn' will respect
+  ;; `org-display-remote-inline-images'.
   (setq org-display-remote-inline-images 'download) ; TRAMP urls
-  (org-link-set-parameters "http"  :image-data-fun #'+org-http-image-data-fn)
-  (org-link-set-parameters "https" :image-data-fun #'+org-http-image-data-fn)
-  (org-link-set-parameters "img"   :image-data-fun #'+org-inline-image-data-fn))
+  (org-link-set-parameters "http"  :preview #'+org-link-preview-image-url-fn)
+  (org-link-set-parameters "https" :preview #'+org-link-preview-image-url-fn)
+  (org-link-set-parameters "data"  :preview #'+org-link-preview-image-data-fn))
 
 
 (defun +org-init-export-h ()
@@ -744,7 +751,7 @@ up to be fully-fledged org-mode buffers."
             vc-handled-backends
             enable-local-variables
             find-file-hook)
-        (when-let ((buf (delay-mode-hooks (funcall fn file))))
+        (when-let* ((buf (delay-mode-hooks (funcall fn file))))
           (with-current-buffer buf
             (add-hook 'doom-switch-buffer-hook #'+org--restart-mode-h
                       nil 'local))
@@ -789,7 +796,7 @@ between the two."
   (map! :map org-mode-map
         [remap org-clock-in]        #'jason/smart-clock-in
         "C-c C-S-l"  #'+org/remove-link
-        "C-c C-i"    #'org-toggle-inline-images
+        "C-c <C-i>"  #'org-link-preview-refresh
         ;; textmate-esque newline insertion
         "S-RET"      #'+org/shift-return
         "C-RET"      #'+org/insert-item-below
@@ -1079,42 +1086,12 @@ between the two."
                #'+org-link-doom--help-echo-from-textprop)
            (+org-link-doom--help-echo-from-textprop nil (current-buffer) (point)))))
 
-  ;; HACK Fix #2972: infinite recursion when eldoc kicks in 'org' or 'python'
+  ;; HACK: Fix #2972: infinite recursion when eldoc kicks in 'org' or 'python'
   ;;   src blocks.
-  ;; TODO Should be reported upstream!
+  ;; REVIEW: Should be reported upstream!
   (puthash "org" #'ignore org-eldoc-local-functions-cache)
   (puthash "plantuml" #'ignore org-eldoc-local-functions-cache)
   (puthash "python" #'python-eldoc-function org-eldoc-local-functions-cache))
-
-
-(use-package! org-pdftools
-  :when (modulep! :tools pdf)
-  :commands org-pdftools-export
-  :init
-  (after! org
-    ;; HACK Fixes an issue where org-pdftools link handlers will throw a
-    ;;      'pdf-info-epdfinfo-program is not executable' error whenever any
-    ;;      link is stored or exported (whether or not they're a pdf link). This
-    ;;      error gimps org until `pdf-tools-install' is run, but this is poor
-    ;;      UX, so we suppress it.
-    (defun +org--pdftools-link-handler (fn &rest args)
-      "Produces a link handler for org-pdftools that suppresses missing-epdfinfo errors whenever storing or exporting links."
-      (lambda (&rest args)
-        (and (ignore-errors (require 'org-pdftools nil t))
-             (file-executable-p pdf-info-epdfinfo-program)
-             (apply fn args))))
-    (org-link-set-parameters (or (bound-and-true-p org-pdftools-link-prefix) "pdf")
-                             :follow   (+org--pdftools-link-handler #'org-pdftools-open)
-                             :complete (+org--pdftools-link-handler #'org-pdftools-complete-link)
-                             :store    (+org--pdftools-link-handler #'org-pdftools-store-link)
-                             :export   (+org--pdftools-link-handler #'org-pdftools-export))
-    (add-hook! 'org-open-link-functions
-      (defun +org-open-legacy-pdf-links-fn (link)
-        "Open pdftools:* and pdfviews:* links as if they were pdf:* links."
-        (let ((regexp "^pdf\\(?:tools\\|view\\):"))
-          (when (string-match-p regexp link)
-            (org-pdftools-open (replace-regexp-in-string regexp "" link))
-            t))))))
 
 
 (use-package! evil-org
@@ -1343,16 +1320,16 @@ between the two."
   ;; Other org properties are all-caps. Be consistent.
   (setq org-effort-property "EFFORT")
 
-  ;; HACK `org-id' doesn't check if `org-id-locations-file' exists or is
-  ;;      writeable before trying to read/write to it, potentially throwing a
-  ;;      file-error if it doesn't, which can leave Org in a broken state.
+  ;; HACK: `org-id' doesn't check if `org-id-locations-file' exists or is
+  ;;   writeable before trying to read/write to it, potentially throwing a
+  ;;   file-error if it doesn't, which can leave Org in a broken state.
   (defadvice! +org--fail-gracefully-a (fn &rest args)
     :around '(org-id-locations-save org-id-locations-load)
     (with-demoted-errors "org-id-locations: %s"
       (apply fn args)))
 
   (add-hook 'org-open-at-point-functions #'doom-set-jump-h)
-  ;; HACK For functions that dodge `org-open-at-point-functions', like
+  ;; HACK: For functions that dodge `org-open-at-point-functions', like
   ;;   `org-id-open', `org-goto', or roam: links.
   (advice-add #'org-mark-ring-push :around #'doom-set-jump-a)
 

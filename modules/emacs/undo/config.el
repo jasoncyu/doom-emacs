@@ -21,24 +21,7 @@
               (define-key map (kbd "C-x r U") #'undo-fu-session-recover)
               map)
     :init-value nil
-    :global t)
-
-  ;; HACK: If undo-tree creates its diff window next to a popup/side window, the
-  ;;   `balance-window' calls in `undo-tree-visualizer-update-diff' can wreck
-  ;;   havoc on the window tree, making the diff window an unclosable "root"
-  ;;   window (which emacs will happily throw errors about when you call
-  ;;   `undo-tree-visualizer-quit'). Breakage ensues.
-  ;; REVIEW: Should be reported/addressed upstream, in undo-tree!
-  (defadvice! +undo-tree--show-visualizer-diff-safely-a (&optional node)
-    :override #'undo-tree-visualizer-show-diff
-    (setq undo-tree-visualizer-diff t)
-    (let ((buff (with-current-buffer undo-tree-visualizer-parent-buffer
-                  (with-current-buffer (undo-tree-diff node)
-                    (hide-mode-line-mode +1))))
-          (display-buffer-mark-dedicated 'soft)
-          (win (split-window (get-buffer-window undo-tree-visualizer-parent-buffer))))
-      (set-window-buffer win buff)
-      (shrink-window-if-larger-than-buffer win))))
+    :global t))
 
 
 (use-package! undo-fu-session
@@ -53,11 +36,11 @@
     ;; is our priority within Emacs
     (setq undo-fu-session-compression 'zst))
 
-  ;; HACK Fix #4993: we've advised `make-backup-file-name-1' to produced SHA1'ed
-  ;;      filenames to prevent file paths that are too long, so we force
-  ;;      `undo-fu-session--make-file-name' to use it instead of its own
-  ;;      home-grown overly-long-filename generator.
-  ;; TODO PR this upstream; should be a universal issue
+  ;; HACK: Fix #4993: we've advised `make-backup-file-name-1' to produced
+  ;;   SHA1'ed filenames to prevent file paths that are too long, so we force
+  ;;   `undo-fu-session--make-file-name' to use it instead of its own home-grown
+  ;;   overly-long-filename generator.
+  ;; TODO: PR this upstream; should be a universal issue
   (defadvice! +undo-fu-make-hashed-session-file-name-a (file)
     :override #'undo-fu-session--make-file-name
     (concat (let ((backup-directory-alist `(("." . ,undo-fu-session-directory))))
@@ -117,4 +100,27 @@
   ;; Undo-tree is too chatty about saving its history files. This doesn't
   ;; totally suppress it logging to *Messages*, it only stops it from appearing
   ;; in the echo-area.
-  (advice-add #'undo-tree-save-history :around #'doom-shut-up-a))
+  (advice-add #'undo-tree-save-history :around #'doom-shut-up-a)
+
+  ;; HACK: If undo-tree creates its diff window next to a popup/side window, the
+  ;;   `balance-window' calls in `undo-tree-visualizer-update-diff' can wreck
+  ;;   havoc on the window tree, making the diff window an unclosable "root"
+  ;;   window (which emacs will happily throw errors about when you call
+  ;;   `undo-tree-visualizer-quit'). Breakage ensues.
+  ;; REVIEW: Should be reported/addressed upstream, in undo-tree!
+  (defadvice! +undo-tree--show-visualizer-diff-safely-a (&optional node)
+    :override #'undo-tree-visualizer-show-diff
+    (setq undo-tree-visualizer-diff t)
+    (let ((buff (with-current-buffer undo-tree-visualizer-parent-buffer
+                  (undo-tree-diff node)))
+          (display-buffer-mark-dedicated 'soft)
+          (win (split-window (get-buffer-window undo-tree-visualizer-parent-buffer))))
+      (with-current-buffer buff
+        (hide-mode-line-mode +1))
+      (set-window-buffer win buff)
+      (shrink-window-if-larger-than-buffer win)))
+
+  (defadvice! +undo-tree--suppress-balance-windows-a (fn &rest args)
+    :around #'undo-tree-visualizer-update-diff
+    (letf! ((#'balance-windows #'ignore))
+      (apply fn args))))

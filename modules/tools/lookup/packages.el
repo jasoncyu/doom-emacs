@@ -1,14 +1,14 @@
 ;; -*- no-byte-compile: t; -*-
 ;;; tools/lookup/packages.el
 
-;; HACK `dumb-jump' uses the `helm-build-sync-source' macro, but this requires
-;;      helm be loaded before `dumb-jump' is byte-compiled during installation.
-;;      To ensure this, we declare helm before dumb-jump.
+;; HACK: `dumb-jump' uses the `helm-build-sync-source' macro, but this requires
+;;   helm be loaded before `dumb-jump' is byte-compiled during installation. To
+;;   ensure this, we declare helm before dumb-jump.
 (when (modulep! :completion helm)
   (package! helm))
 
 ;;
-(package! dumb-jump :pin "b1ec972ed36d0a14246aeda63c8d65ee912ccc8f")
+(package! dumb-jump :pin "41b6b9dd44b19cf8259e45985f332917b4d9fcba")
 (when (modulep! :completion ivy)
   (package! ivy-xref :pin "a82e8e117d2dd62c28b6a3e3d6e4cfb11c0bda38"))
 (when (modulep! :completion helm)

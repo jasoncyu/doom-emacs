@@ -1,7 +1,7 @@
 ;;; config/default/+bindings.el -*- lexical-binding: t; -*-
 
 (when (modulep! :editor evil +everywhere)
-  ;; NOTE SPC u replaces C-u as the universal argument.
+  ;; NOTE: SPC u replaces C-u as the universal argument.
 
   ;; Minibuffer
   (map! :map (evil-ex-completion-map evil-ex-search-keymap)
@@ -341,7 +341,7 @@
       :desc "Org Capture"           "X"    #'org-capture
       ;; C-u is used by evil
       :desc "Universal argument"    "u"    #'universal-argument
-      :desc "window"                "w"    evil-window-map
+      :desc "window"                "w"    #'evil-window-map
       :desc "help"                  "h"    help-map
 
       (:when (modulep! :ui popup)
@@ -594,10 +594,6 @@
        :desc "From clipboard"                "y"   #'+default/yank-pop)
 
       ;;; <leader> l --- live share/collab
-      ;;; TODO Do you like this location for this map? This was the best idea we
-      ;;; could come up with, but we're happy to move it if there's a better
-      ;;; place! Also not sure if we're allowed to say "live share" since that's
-      ;;; a blatant ripoff of VS Code's name for this feature
       (:when (modulep! :tools collab)
        (:prefix-map ("l" . "live share/collab")
         :desc "Switch to a shared buffer"      "b"   #'crdt-switch-to-buffer
@@ -736,6 +732,7 @@
          :desc "Explain"                    "e" #'gptel-quick
          :desc "Add file to context"        "f" #'gptel-add-file
          :desc "Open gptel"                 "l" #'gptel
+         :desc "Open gptel in same window"  "L" #'+llm/open-in-same-window
          :desc "Send to gptel"              "s" #'gptel-send
          :desc "Open gptel menu"            "m" #'gptel-menu
          :desc "Rewrite"                    "r" #'gptel-rewrite
@@ -790,8 +787,7 @@
        :desc "Restore last session"         "l" #'doom/quickload-session
        :desc "Save session to file"         "S" #'doom/save-session
        :desc "Restore session from file"    "L" #'doom/load-session
-       :desc "Restart & restore Emacs"      "r" #'doom/restart-and-restore
-       :desc "Restart Emacs"                "R" #'doom/restart)
+       :desc "Restart Emacs"                "r" #'doom/restart)
 
       ;;; <leader> r --- remote
       (:when (modulep! :tools upload)

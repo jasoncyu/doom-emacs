@@ -1,7 +1,9 @@
 ;;; lang/clojure/config.el -*- lexical-binding: t; -*-
 
 (after! projectile
-  (pushnew! projectile-project-root-files "project.clj" "build.boot" "deps.edn"))
+  (add-to-list 'projectile-project-root-files "deps.edn")
+  (add-to-list 'projectile-project-root-files "build.boot")
+  (add-to-list 'projectile-project-root-files "project.clj"))
 
 ;; Large clojure buffers tend to be slower than large buffers of other modes, so
 ;; it should have a lower threshold too.
@@ -86,8 +88,10 @@
 ;; library being loaded only when is absolutely needed, which is too late for
 ;; reconfiguration in many cases.
 (use-package! cider-mode
-  ;; NOTE if `org-directory' doesn't exist, `cider-jack' in won't work
+  ;; NOTE: If `org-directory' doesn't exist, `cider-jack' in won't work
   :hook (clojure-mode-local-vars . cider-mode)
+  :hook (clojurec-mode-local-vars . cider-mode)
+  :hook (clojurescript-mode-local-vars . cider-mode)
   :hook (clojure-ts-mode-local-vars . cider-mode)
   :init
   (after! clojure-mode
@@ -101,7 +105,7 @@
                          clojurec-mode clojure-ts-clojurec-mode)
       #'cider-eval-region))
 
-  ;; HACK Fix radian-software/radian#446: CIDER tries to calculate the frame's
+  ;; HACK: Fix radian-software/radian#446: CIDER tries to calculate the frame's
   ;;   background too early; sometimes before the initial frame has been
   ;;   initialized, causing errors.
   (defvar cider-docview-code-background-color nil)

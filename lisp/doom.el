@@ -93,8 +93,8 @@
           (concat "Alternatively, either update your $PATH environment variable to include the\n"
                   "path of the desired Emacs executable OR alter the $EMACS environment variable\n"
                   "to specify the exact path or command needed to invoke Emacs."
-                  (when-let ((script (cadr (member "--load" command-line-args)))
-                             (command (file-name-nondirectory script)))
+                  (when-let* ((script (cadr (member "--load" command-line-args)))
+                              (command (file-name-nondirectory script)))
                     (concat " For example:\n\n"
                             "  $ EMACS=/path/to/valid/emacs " command " ...\n"
                             "  $ EMACS=\"/Applications/Emacs.app/Contents/MacOS/Emacs\" " command " ...\n"
@@ -144,6 +144,7 @@
 (push :system features)
 (put :system 'subfeatures doom-system)
 
+;;; DEPRECATED: Remove in v3
 ;; Emacs needs a more consistent way to detect build features, and the docs
 ;; claim `system-configuration-features' is not da way. Some features (that
 ;; don't represent packages) can be found in `features' (which `featurep'
@@ -223,7 +224,7 @@
   "Current version of Doom Emacs core.")
 
 ;; DEPRECATED: Remove these when the modules are moved out of core.
-(defconst doom-modules-version "26.02.0-pre"
+(defconst doom-modules-version "26.04.0-pre"
   "Current version of Doom Emacs.")
 
 (defvar doom-init-time nil
@@ -236,7 +237,7 @@
             (cons (match-string 1 profile)
                   (match-string 2 profile))
           (cons profile "0")))
-    ;; TODO Restore this in 3.0
+    ;; TODO: Restore this in v3
     ;; (cons "_" "0")
     )
   "The active profile as a cons cell (NAME . VERSION).")
@@ -524,16 +525,6 @@ uses a straight or package.el command directly).")
     ;;   later (see `startup--load-user-init-file@undo-hacks').
     (advice-add #'tool-bar-setup :override #'ignore)
 
-    ;; PERF,UX: site-lisp files are often obnoxiously noisy (emitting output
-    ;;   that isn't useful to end-users, like load messages, deprecation
-    ;;   notices, and linter warnings). Displaying these in the minibuffer
-    ;;   causes unnecessary redraws at startup which can impact startup time
-    ;;   drastically and cause flashes of white. It also pollutes the logs. I
-    ;;   suppress it here and load it myself, later, in a more controlled way
-    ;;   (see `doom-initialize').
-    (put 'site-run-file 'initial-value site-run-file)
-    (setq site-run-file nil)
-
     (define-advice startup--load-user-init-file (:around (fn &rest args) undo-hacks 95)
       "Undo Doom's startup optimizations to prep for the user's session."
       (unwind-protect (apply fn args)
@@ -551,7 +542,15 @@ uses a straight or package.el command directly).")
     (unless doom--system-macos-p
       (setq command-line-ns-option-alist nil))
     (unless (memq initial-window-system '(x pgtk))
-      (setq command-line-x-option-alist nil))))
+      (setq command-line-x-option-alist nil))
+
+    ;; PERF: `setopt' can eagerly load symbol dependencies to preform immediate
+    ;;   type checking, which can cause unexpected load order issues and impact
+    ;;   startup time drastically. Type checks are already performed when the
+    ;;   variable is defined, anyway, so this advice prevents early loading.
+    (define-advice setopt--set (:around (fn &rest args) inhibit-load-symbol -90)
+      (let ((custom-load-recursion t))
+        (apply fn args)))))
 
 
 ;;
@@ -664,6 +663,11 @@ safely cleaned up with 'doom sync' or 'doom gc'."
 ;; packages are loaded is an unneeded and unhelpful maintenance burden. Emacs
 ;; still aliases them fine regardless.
 (setq warning-suppress-types '((defvaralias) (lexical-binding)))
+
+;; Straight emits an intrusive warning if package.el is present and
+;; loaded. Silence it.
+;; REVIEW: Remove when Straight is replaced with Elpaca
+(add-to-list 'warning-suppress-types '(straight package))
 
 ;; As some point in 31+, Emacs began spamming the user with warnings about
 ;; missing `lexical-binding' cookies in elisp files that you are unlikely to
@@ -801,9 +805,12 @@ appropriately against `noninteractive' or the `cli' context."
         (when (doom-context-push 'emacs)
           (add-hook 'doom-after-init-hook #'doom-load-packages-incrementally-h 100)
           (add-hook 'doom-after-init-hook #'doom-display-benchmark-h 110)
-          (doom-run-hook-on 'doom-first-buffer-hook '(find-file-hook doom-switch-buffer-hook))
           (doom-run-hook-on 'doom-first-file-hook   '(find-file-hook dired-initial-position-hook))
           (doom-run-hook-on 'doom-first-input-hook  '(pre-command-hook))
+          (doom-run-hook-on 'doom-first-buffer-hook '(find-file-hook doom-switch-buffer-hook)
+                            (lambda ()
+                              (not (member (buffer-name)
+                                           (list "*scratch*" (buffer-name (doom-fallback-buffer)))))))
 
           ;; If the user's already opened something (e.g. with command-line
           ;; arguments), then we should assume nothing about the user's
@@ -820,7 +827,7 @@ appropriately against `noninteractive' or the `cli' context."
 
           ;; This is the absolute latest a hook can run in Emacs' startup
           ;; process.
-          (advice-add #'command-line-1 :after #'doom-finalize)
+          (advice-add #'command-line-1 :after #'doom-finalize '((depth . 100)))
 
           (require 'doom-start)
           (let ((init-file (doom-profile-init-file doom-profile)))
@@ -858,29 +865,18 @@ appropriately against `noninteractive' or the `cli' context."
 
         ;; Ensure the CLI framework is ready.
         (require 'doom-cli)
-        (add-hook 'doom-cli-initialize-hook #'doom-finalize)))
+        (add-hook 'doom-cli-initialize-hook #'doom-finalize 100)
 
-    ;; HACK: I suppress loading of site files here to load them manually later.
-    ;;   Why? To suppress the otherwise unavoidable output they commonly produce
-    ;;   (like deprecation notices, file-loaded messages, and linter warnings).
-    ;;   This output pollutes Emacs' log and the output of doom's CLI (or
-    ;;   scripts derived from it) with potentially confusing or alarming -- but
-    ;;   always unimportant and rarely actionable -- information to the user. To
-    ;;   see that output, turn on debug mode!
-    (let ((site-loader
-           (lambda ()
-             (quiet!!
-               (unless interactive?
-                 (require 'cl nil t))  ; "Package cl is deprecated"
-               (unless site-run-file
-                 (when-let* ((site-file (get 'site-run-file 'initial-value)))
-                   (let ((inhibit-startup-screen inhibit-startup-screen))
-                     (setq site-run-file site-file)
-                     (load site-run-file t))))))))
-      (if interactive?
-          (define-advice startup--load-user-init-file (:before (&rest _) load-site-files 100)
-            (funcall site-loader))
-        (funcall site-loader)))
+        ;; HACK: site-lisp files can be obnoxiously noisy (emitting output that
+        ;;   can pollute logs and isn't useful to (and may even alarm)
+        ;;   end-users, like file load messages, deprecation notices, and linter
+        ;;   warnings). bin/doom suppresses site-lisp in its shebang line so we
+        ;;   can load it here with output suppressed (unless debug mode is on).
+        (quiet!!
+          (require 'cl nil t)   ; "Package cl is deprecated"
+          (unless site-run-file
+            (let ((inhibit-startup-screen inhibit-startup-screen))
+              (load "site-start" t))))))
 
     ;; A last ditch opportunity to undo hacks or do extra configuration before
     ;; the session is complicated by user config and packages.
@@ -892,7 +888,7 @@ appropriately against `noninteractive' or the `cli' context."
     ;; Remember these variables' initial values, so they can be safely reset
     ;; later (e.g. by `doom/reload'), or compared against for change heuristics.
     (dolist (var '(exec-path load-path process-environment))
-      (put var 'initial-value (default-toplevel-value var)))
+      (put var 'initial-value (copy-sequence (default-toplevel-value var))))
 
     t))
 

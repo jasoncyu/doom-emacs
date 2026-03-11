@@ -1,7 +1,7 @@
 ;;; lisp/lib/config.el -*- lexical-binding: t; -*-
 
 ;;;###autoload
-(defvar doom-after-reload-hook nil
+(defvar doom-after-reload-hook '(doom-kill-childframes-h)
   "A list of hooks to run after `doom/reload' has reloaded Doom.")
 
 ;;;###autoload
@@ -46,7 +46,10 @@
      (with-current-buffer
          (with-environment-variables
              (("PATH" (string-join exec-path path-separator))
-              ("EMACS" (shell-quote-argument emacs-bin))
+              ("EMACS"
+               (if (featurep :system 'windows)
+                   (replace-regexp-in-string " " "\\ " emacs-bin t t)
+                 (shell-quote-argument emacs-bin)))
               ("EMACSDIR" doom-emacs-dir)
               ("DOOMDIR" doom-user-dir)
               ("DOOMLOCALDIR" doom-local-dir)
@@ -131,21 +134,6 @@ imported into Emacs."
       (with-temp-buffer
         (doom-load-envvars-file doom-env-file)
         (message "Reloaded %S" (abbreviate-file-name doom-env-file))))))
-
-(defvar doom-upgrade-command
-  (format "%s upgrade -B --force"
-          ;; /usr/bin/env doesn't exist on Android
-          (if (featurep :system 'android)
-              "sh %s"
-            "%s"))
-  "Command that `doom/upgrade' runs.")
-;;;###autoload
-(defun doom/upgrade ()
-  "Run 'doom upgrade' then prompt to restart Emacs."
-  (interactive)
-  (doom--if-compile doom-upgrade-command
-      (when (y-or-n-p "You must restart Emacs for the upgrade to take effect.\n\nRestart Emacs?")
-        (doom/restart-and-restore))))
 
 (provide 'doom-lib '(config))
 ;;; config.el ends here

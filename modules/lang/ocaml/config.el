@@ -1,7 +1,8 @@
 ;;; lang/ocaml/config.el -*- lexical-binding: t; -*-
 
 (after! projectile
-  (pushnew! projectile-project-root-files "dune-project"))
+  (add-to-list 'projectile-project-root-files "dune-project"))
+
 
 ;;
 ;;; Packages
@@ -28,7 +29,7 @@
   (setq tuareg-prettify-symbols-full t)
 
   (setq-hook! 'tuareg-mode-hook
-    comment-line-break-function #'+ocaml/comment-indent-new-line)
+    comment-continue nil)
 
   (map! :localleader
         :map tuareg-mode-map

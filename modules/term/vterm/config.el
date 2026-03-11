@@ -1,15 +1,14 @@
 ;;; term/vterm/config.el -*- lexical-binding: t; -*-
 
 (use-package! vterm
-  :when (featurep 'dynamic-modules)
+  :when (bound-and-true-p module-file-suffix)  ; requires dynamic-modules support
   :commands vterm-mode
-  :hook (vterm-mode . doom-mark-buffer-as-real-h)
   :hook (vterm-mode . hide-mode-line-mode) ; modeline serves no purpose in vterm
   :preface
-  ;; HACK Because vterm clusmily forces vterm-module.so's compilation on us when
-  ;;      the package is loaded, this is necessary to prevent it when
-  ;;      byte-compiling this file (`use-package' blocks eagerly loads packages
-  ;;      when compiled).
+  ;; HACK: Because vterm clusmily forces vterm-module.so's compilation on us
+  ;;   when the package is loaded, this is necessary to prevent it when
+  ;;   byte-compiling this file (`use-package' blocks eagerly loads packages
+  ;;   when compiled).
   (when noninteractive
     (advice-add #'vterm-module-compile :override #'ignore)
     (provide 'vterm-module))

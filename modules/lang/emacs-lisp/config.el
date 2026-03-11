@@ -19,6 +19,13 @@ package-lint, and checkdoc) can be more overwhelming than helpful.
 
 See `+emacs-lisp-non-package-mode' for details.")
 
+(defvar +emacs-lisp-working-buffer nil
+  "What buffer to evaluate elisp from.
+
+Use `+emacs-lisp/change-working-buffer' to change this. Only applies to
+`+emacs-lisp-eval-fn', which is the eval handler for `emacs-lisp-mode',
+`lisp-interaction-mode', and `lisp-data-mode', by default.")
+
 
 ;; `elisp-mode' is loaded at startup. In order to lazy load its config we need
 ;; to pretend it isn't loaded
@@ -33,7 +40,7 @@ See `+emacs-lisp-non-package-mode' for details.")
   :config
   (let ((modes '(emacs-lisp-mode lisp-interaction-mode lisp-data-mode)))
     (set-repl-handler! modes #'+emacs-lisp/open-repl)
-    (set-eval-handler! modes #'+emacs-lisp-eval)
+    (set-eval-handler! modes #'+emacs-lisp-eval-fn)
     (set-lookup-handlers! `(,@modes helpful-mode)
       :definition    #'+emacs-lisp-lookup-definition
       :documentation #'+emacs-lisp-lookup-documentation)
@@ -118,7 +125,7 @@ See `+emacs-lisp-non-package-mode' for details.")
   (defadvice! +emacs-lisp-append-value-to-eldoc-a (fn sym)
     "Display variable value next to documentation in eldoc."
     :around #'elisp-get-var-docstring
-    (when-let (ret (funcall fn sym))
+    (when-let* ((ret (funcall fn sym)))
       (if (boundp sym)
           (concat ret " "
                   (let* ((truncated " [...]")
@@ -299,8 +306,6 @@ current buffer."
             (when (buffer-live-p buf)
               (with-current-buffer buf (goto-char pos))))))))
   :config
-  (setq helpful-set-variable-function #'setq!)
-
   (setq-hook! 'helpful-mode-hook
     ;; Elisp code using tab indentation always use a tab-width of 8. C source
     ;; code from Emacs also use a tab-width of 8. Therefore Helpful needs a

@@ -1,8 +1,9 @@
 ;;; lang/javascript/config.el -*- lexical-binding: t; -*-
 
 (after! projectile
-  (pushnew! projectile-project-root-files "package.json")
-  (pushnew! projectile-globally-ignored-directories "node_modules" "flow-typed"))
+  (add-to-list 'projectile-project-root-files "package.json")
+  (add-to-list 'projectile-globally-ignored-directories "node_modules")
+  (add-to-list 'projectile-globally-ignored-directories "flow-typed"))
 
 
 ;;
@@ -10,7 +11,9 @@
 
 (defun +javascript-common-config (mode)
   (unless (eq mode 'nodejs-repl-mode)
-    (set-repl-handler! mode #'+javascript/open-repl)
+    (set-repl-handler! mode #'+javascript/open-repl
+      :send-region #'nodejs-repl-send-region
+      :send-buffer #'nodejs-repl-send-buffer)
     (set-electric! mode :chars '(?\} ?\) ?. ?:))
     (set-ligatures! mode
       ;; Functional

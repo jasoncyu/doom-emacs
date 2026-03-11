@@ -5,7 +5,7 @@
       doom-localleader-alt-key "C-c l")
 
 ;; persp-mode and projectile in different prefixes
-(setq! persp-keymap-prefix (kbd "C-c w"))
+(setopt persp-keymap-prefix (kbd "C-c w"))
 (after! projectile
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
 
@@ -307,8 +307,7 @@
        :desc "Restore last session"         "l" #'doom/quickload-session
        :desc "Save session to file"         "S" #'doom/save-session
        :desc "Restore session from file"    "L" #'doom/load-session
-       :desc "Restart & restore Emacs"      "r" #'doom/restart-and-restore
-       :desc "Restart Emacs"                "R" #'doom/restart)
+       :desc "Restart Emacs"                "r" #'doom/restart)
 
       ;;; <leader> & --- snippets
       (:prefix-map ("&" . "snippets")

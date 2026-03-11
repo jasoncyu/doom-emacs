@@ -11,10 +11,9 @@
 
 (after! ispell
   ;; Don't spellcheck org blocks
-  (pushnew! ispell-skip-region-alist
-            '(":\\(PROPERTIES\\|LOGBOOK\\):" . ":END:")
-            '("#\\+BEGIN_SRC" . "#\\+END_SRC")
-            '("#\\+BEGIN_EXAMPLE" . "#\\+END_EXAMPLE"))
+  (add-to-list 'ispell-skip-region-alist '(":\\(PROPERTIES\\|LOGBOOK\\):" . ":END:"))
+  (add-to-list 'ispell-skip-region-alist '("#\\+BEGIN_SRC" . "#\\+END_SRC"))
+  (add-to-list 'ispell-skip-region-alist '("#\\+BEGIN_EXAMPLE" . "#\\+END_EXAMPLE"))
 
   ;; Enable either aspell, hunspell or enchant.
   ;;   If no module flags are given, enable either aspell, hunspell or enchant
@@ -142,12 +141,12 @@
       (add-hook! 'spell-fu-mode-hook
         (defun +spell-init-excluded-faces-h ()
           "Set `spell-fu-faces-exclude' according to `+spell-excluded-faces-alist'."
-          (when-let (excluded (cdr (cl-find-if #'derived-mode-p +spell-excluded-faces-alist :key #'car)))
+          (when-let* ((excluded (cdr (cl-find-if #'derived-mode-p +spell-excluded-faces-alist :key #'car))))
             (setq-local spell-fu-faces-exclude excluded))))
 
-      ;; TODO custom `spell-fu-check-range' function to reduce false positives
-      ;;      more intelligently, or modify `spell-fu-word-regexp' to include
-      ;;      non-latin charactersets.
+      ;; TODO: custom `spell-fu-check-range' function to reduce false positives
+      ;;   more intelligently, or modify `spell-fu-word-regexp' to include
+      ;;   non-latin charactersets.
       )
 
   (use-package! flyspell ; built-in

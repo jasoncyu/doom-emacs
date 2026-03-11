@@ -21,10 +21,10 @@ Can be a list of backends; accepts any value `company-backends' accepts.")
   ;; will do it for you, after `+lsp-defer-shutdown' seconds.
   (setq lsp-keep-workspace-alive nil)
 
-  ;; NOTE I tweak LSP's defaults in order to make its more expensive or imposing
-  ;;      features opt-in. Some servers implement these poorly and, in most
-  ;;      cases, it's safer to rely on Emacs' native mechanisms (eldoc vs
-  ;;      lsp-ui-doc, open in popup vs sideline, etc).
+  ;; NOTE: I tweak LSP's defaults in order to make its more expensive or
+  ;;   imposing features opt-in. Some servers implement these poorly and, in
+  ;;   most cases, it's safer to rely on Emacs' native mechanisms (eldoc vs
+  ;;   lsp-ui-doc, open in popup vs sideline, etc).
 
   ;; Disable features that have great potential to be slow.
   (setq lsp-enable-folding nil
@@ -42,22 +42,6 @@ Can be a list of backends; accepts any value `company-backends' accepts.")
   ;; Let doom bind the lsp keymap.
   (when (modulep! :config default +bindings)
     (setq lsp-keymap-prefix nil))
-
-  (unless (featurep :system 'windows)
-    ;; HACK: Frustratingly enough, the value of `lsp-zig-download-url-format' is
-    ;;   used immediately while the lsp-zig package is loading, so changing it
-    ;;   *after* lsp-zig makes no difference. What's worse, the variable is a
-    ;;   constant, so we can't change it *before* the package is loaded either!
-    ;;   Thank god a (non-inlined) function is used to build the URL, so we have
-    ;;   something to advise.
-    ;; REVIEW: Remove when zigtools/zls#1879 & emacs-lsp/lsp-mode#4445 are
-    ;;   resolved.
-    (defadvice! +lsp--use-correct-zls-download-url-a (fn &rest args)
-      "See zigtools/zls#1879."
-      :around #'lsp-zig--zls-url
-      (let ((lsp-zig-download-url-format
-             "https://github.com/zigtools/zls/releases/latest/download/zls-%s-%s.tar.xz"))
-        (apply fn args))))
 
   :config
   (set-debug-variable! 'lsp-log-io t 2)
@@ -77,7 +61,7 @@ Can be a list of backends; accepts any value `company-backends' accepts.")
         (lsp-signature-stop)
         t)))
 
-  (set-popup-rule! "^\\*lsp-\\(help\\|install\\)" :size 0.35 :quit t :select t)
+  (set-popup-rule! "^\\*lsp-\\(help\\|install\\)" :size 0.3 :quit t :select t)
   (set-lookup-handlers! 'lsp-mode
     :definition #'+lsp-lookup-definition-handler
     :references #'+lsp-lookup-references-handler

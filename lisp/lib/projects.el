@@ -1,10 +1,10 @@
 ;;; lisp/lib/projects.el -*- lexical-binding: t; -*-
 
-;; HACK We forward declare these variables because they are let-bound in a
-;;      number of places with no guarantee that they've been defined yet (i.e.
-;;      that `projectile' is loaded). If a variable is defined with `defvar'
-;;      while it is lexically bound, you get "Defining as dynamic an already
-;;      lexical var" errors in Emacs 28+).
+;; HACK: We forward declare these variables because they are let-bound in a
+;;   number of places with no guarantee that they've been defined yet (i.e.
+;;   that `projectile' is loaded). If a variable is defined with `defvar' while
+;;   it is lexically bound, you get "Defining as dynamic an already lexical var"
+;;   errors in Emacs 28+).
 ;;;###autoload (defvar projectile-project-root nil)
 ;;;###autoload (defvar projectile-enable-caching (not noninteractive))
 ;;;###autoload (defvar projectile-require-project-root 'prompt)
@@ -79,7 +79,7 @@ file will be created within it so that it will always be treated as one. This
 command will throw an error if a parent of DIR is a valid project (which would
 mask DIR)."
   (interactive "D")
-  (when-let ((proj-dir (doom-project-root dir)))
+  (when-let* ((proj-dir (doom-project-root dir)))
     (if (file-equal-p proj-dir dir)
         (user-error "ERROR: Directory is already a project: %s" proj-dir)
       (user-error "ERROR: Directory is already inside another project: %s" proj-dir)))

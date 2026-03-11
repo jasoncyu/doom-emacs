@@ -68,8 +68,8 @@ You should use `set-eshell-alias!' to change this.")
         eshell-scroll-to-bottom-on-output 'all
         eshell-kill-processes-on-exit t
         eshell-hist-ignoredups t
-        ;; don't record command in history if prefixed with whitespace
-        ;; TODO Use `eshell-input-filter-initial-space' when Emacs 25 support is dropped
+        ;; Don't record command in history if prefixed with whitespace
+        ;; TODO: Use `eshell-input-filter-initial-space' when Emacs 25 support is dropped
         eshell-input-filter (lambda (input) (not (string-match-p "\\`\\s-+" input)))
         ;; em-prompt
         eshell-prompt-regexp "^[^#$\n]* [#$λ] "
@@ -77,9 +77,6 @@ You should use `set-eshell-alias!' to change this.")
         ;; em-glob
         eshell-glob-case-insensitive t
         eshell-error-if-no-glob t)
-
-  ;; Consider eshell buffers real
-  (add-hook 'eshell-mode-hook #'doom-mark-buffer-as-real-h)
 
   ;; Keep track of open eshell buffers
   (add-hook 'eshell-mode-hook #'+eshell-init-h)
@@ -149,7 +146,8 @@ You should use `set-eshell-alias!' to change this.")
   ;; Visual commands require a proper terminal. Eshell can't handle that, so
   ;; it delegates these commands to a term buffer.
   (after! em-term
-    (pushnew! eshell-visual-commands "tmux" "htop" "vim" "nvim" "ncmpcpp"))
+    (dolist (cmd '("tmux" "htop" "vim" "nvim" "ncmpcpp"))
+      (add-to-list 'eshell-visual-commands cmd)))
 
   (after! em-alias
     (setq +eshell--default-aliases eshell-command-aliases-list
@@ -313,8 +311,12 @@ when inhibited to show history matches."
   (add-hook 'eshell-syntax-highlighting-elisp-buffer-setup-hook #'highlight-quoted-mode))
 
 
-(use-package! fish-completion
-  :unless (featurep :system 'windows)
-  :hook (eshell-mode . fish-completion-mode)
-  :init (setq fish-completion-fallback-on-bash-p t
-              fish-completion-inhibit-missing-fish-command-warning t))
+(use-package! pcmpl-args
+  :after eshell
+  :config
+  (dolist (cmd '("doom" "nix-shell"))
+    (defalias (intern (concat "pcomplete/" cmd))
+      #'pcmpl-args-pcomplete-on-help))
+  (dolist (cmd '("fd" "rg" "exa" "emacsclient"))
+    (defalias (intern (concat "pcomplete/" cmd))
+      #'pcmpl-args-pcomplete-on-man)))

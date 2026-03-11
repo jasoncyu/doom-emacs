@@ -33,11 +33,13 @@
                   (buffer-list))))
   (setq centaur-tabs-buffer-list-function #'+tabs-buffer-list)
 
-  (add-hook! '(+doom-dashboard-mode-hook +popup-buffer-mode-hook)
+  (add-hook! '(+dashboard-mode-hook
+               +doom-dashboard-mode-hook  ; DEPRECATED
+               +popup-buffer-mode-hook)
     (defun +tabs-disable-centaur-tabs-mode-maybe-h ()
       "Disable `centaur-tabs-mode' in current buffer."
       (when (centaur-tabs-mode-on-p)
         (centaur-tabs-local-mode)))))
 
-;; TODO tab-bar-mode (emacs 27)
-;; TODO tab-line-mode (emacs 27)
+;; TODO: tab-bar-mode (emacs 27)
+;; TODO: tab-line-mode (emacs 27)

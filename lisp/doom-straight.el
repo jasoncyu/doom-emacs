@@ -55,10 +55,7 @@
       ;; no affect on packages that are pinned, however (run 'doom sync --gc' to
       ;; compact those after-the-fact). Some packages break when shallow cloned
       ;; (like magit and org), but we'll deal with that elsewhere.
-      straight-vc-git-default-clone-depth '(1 single-branch)
-      ;; Straight emits an intrusive warning if package.el is present and
-      ;; loaded. Silence it.
-      straight-package--warning-displayed t)
+      straight-vc-git-default-clone-depth '(1 single-branch))
 
 (with-eval-after-load 'straight
   ;; HACK: Doom relies on deferred compilation, which spares the user 20-50min
@@ -126,8 +123,8 @@ It may not be obvious to users what they should do for some straight prompts,
 so Doom will recommend the one that reverts a package back to its (or target)
 original state.")
 
-;; HACK Remove dired & magit options from prompt, since they're inaccessible in
-;;      noninteractive sessions.
+;; HACK: Remove dired & magit options from prompt, since they're inaccessible in
+;;   noninteractive sessions.
 (advice-add #'straight-vc-git--popup-raw :override #'straight--popup-raw)
 
 ;; HACK: `native-comp' only respects `native-comp-jit-compilation-deny-list'
@@ -155,8 +152,8 @@ original state.")
                             file-list)
              recursively load selector)))
 
-;; HACK Replace GUI popup prompts (which hang indefinitely in tty Emacs) with
-;;      simple prompts.
+;; HACK: Replace GUI popup prompts (which hang indefinitely in tty Emacs) with
+;;   simple prompts.
 (defadvice! doom-straight--fallback-to-y-or-n-prompt-a (fn &optional prompt noprompt?)
   :around #'straight-are-you-sure
   (or noprompt?

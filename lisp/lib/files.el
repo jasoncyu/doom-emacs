@@ -207,7 +207,7 @@ single file or nested compound statement of `and' and `or' statements."
   (if (executable-find "du")
       (/ (string-to-number (cdr (doom-call-process "du" "-sb" dir)))
          1024.0)
-    ;; REVIEW This is slow and terribly inaccurate, but it's something
+    ;; REVIEW: This is slow and terribly inaccurate, but it's something
     (let ((w32-get-true-file-attributes t)
           (file-name-handler-alist dir)
           (max-lisp-eval-depth 5000)
@@ -398,11 +398,11 @@ some optimizations for `binary' IO."
     (dolist (file files)
       (when (featurep 'vc)
         (vc-file-clearprops file)
-        (when-let (buffer (get-file-buffer file))
+        (when-let* ((buffer (get-file-buffer file)))
           (with-current-buffer buffer
             (vc-refresh-state))))
       (when (featurep 'magit)
-        (when-let (default-directory (magit-toplevel (file-name-directory file)))
+        (when-let* ((default-directory (magit-toplevel (file-name-directory file))))
           (cl-pushnew default-directory toplevels)))
       (unless (file-readable-p file)
         (when (bound-and-true-p recentf-mode)

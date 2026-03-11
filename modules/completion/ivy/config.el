@@ -185,9 +185,9 @@ results buffer.")
   :config
   (set-popup-rule! "^\\*ivy-occur" :size 0.35 :ttl 0 :quit nil)
 
-  ;; HACK Fix an issue where `counsel-projectile-find-file-action' would try to
-  ;;      open a candidate in an occur buffer relative to the wrong buffer,
-  ;;      causing it to fail to find the file we want.
+  ;; HACK: Fix an issue where `counsel-projectile-find-file-action' would try to
+  ;;   open a candidate in an occur buffer relative to the wrong buffer, causing
+  ;;   it to fail to find the file we want.
   (defadvice! +ivy--run-from-ivy-directory-a (fn &rest args)
     :around #'counsel-projectile-find-file-action
     (let ((default-directory (ivy-state-directory ivy-last)))
@@ -197,9 +197,9 @@ results buffer.")
   ;; of its own, on top of the defaults.
   (setq ivy-initial-inputs-alist nil)
 
-  ;; REVIEW Counsel allows `counsel-rg-base-command' to be a string or list.
-  ;;        This backwards compatibility complicates things for Doom. Simpler to
-  ;;        just force it to always be a list.
+  ;; REVIEW: Counsel allows `counsel-rg-base-command' to be a string or list.
+  ;;   This backwards compatibility complicates things for Doom. Simpler to just
+  ;;   force it to always be a list.
   (when (stringp counsel-rg-base-command)
     (setq counsel-rg-base-command (split-string counsel-rg-base-command)))
 
@@ -245,7 +245,8 @@ workable results ripgrep produces, despite the error."
 
   ;; `swiper'
   ;; Don't mess with font-locking on the dashboard; it causes breakages
-  (add-to-list 'swiper-font-lock-exclude #'+doom-dashboard-mode)
+  (add-to-list 'swiper-font-lock-exclude #'+doom-dashboard-mode) ; DEPRECATED
+  (add-to-list 'swiper-font-lock-exclude #'+dashboard-mode)
 
   ;; `counsel-find-file'
   (setq counsel-find-file-ignore-regexp "\\(?:^[#.]\\)\\|\\(?:[#~]$\\)\\|\\(?:^Icon?\\)")
@@ -267,13 +268,13 @@ workable results ripgrep produces, despite the error."
   (setf (nth 1 (alist-get 'ddg counsel-search-engines-alist))
         "https://duckduckgo.com/?q=")
 
-  ;; REVIEW Move this somewhere else and perhaps generalize this so both
-  ;;        ivy/helm users can enjoy it.
+  ;; REVIEW: Move this somewhere else and perhaps generalize this so both
+  ;;   ivy/helm users can enjoy it.
   (defadvice! +ivy--counsel-file-jump-use-fd-rg-a (args)
     "Change `counsel-file-jump' to use fd or ripgrep, if they are available."
     :override #'counsel--find-return-list
     (cl-destructuring-bind (find-program . args)
-        (cond ((when-let (fd (executable-find (or doom-fd-executable "fd") t))
+        (cond ((when-let* ((fd (executable-find (or doom-fd-executable "fd") t)))
                  (append (list fd "--hidden" "--type" "file" "--type" "symlink" "--follow" "--color=never")
                          (cl-loop for dir in projectile-globally-ignored-directories
                                   collect "--exclude"
@@ -357,9 +358,7 @@ workable results ripgrep produces, despite the error."
   ;; posframe.
   (dolist (fn '(swiper counsel-rg counsel-grep counsel-git-grep))
     (setf (alist-get fn ivy-posframe-display-functions-alist)
-          #'ivy-display-function-fallback))
-
-  (add-hook 'doom-after-reload-hook #'posframe-delete-all))
+          #'ivy-display-function-fallback)))
 
 
 (use-package! flx
@@ -385,7 +384,7 @@ workable results ripgrep produces, despite the error."
             '(literal regexp initialism fuzzy)
           '(literal regexp initialism)))
   :config
-  ;; REVIEW Remove when radian-software/prescient.el#102 is resolved
+  ;; REVIEW: Remove when radian-software/prescient.el#102 is resolved
   (add-to-list 'ivy-sort-functions-alist '(ivy-resume))
   (setq ivy-prescient-sort-commands
         '(:not swiper swiper-isearch ivy-switch-buffer lsp-ivy-workspace-symbol
@@ -398,7 +397,7 @@ workable results ripgrep produces, despite the error."
     (let ((prescient-filter-method '(literal regexp)))
       (ivy-prescient-re-builder str)))
 
-  ;; NOTE prescient config duplicated with `company'
+  ;; Prescient config duplicated with `company':
   (setq prescient-save-file (file-name-concat doom-profile-cache-dir "prescient-save.el")))
 
 

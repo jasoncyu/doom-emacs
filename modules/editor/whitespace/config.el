@@ -60,6 +60,14 @@ or if the current buffer is read-only or not file-visiting."
         (cl-pushnew 'face whitespace-style) ; must be first
         (whitespace-mode +1))))
 
+  ;; Fix #8573: Editorconfig may change the tab-width or indent style later in a
+  ;;   file's init process, so whitespace-mode needs refreshing.
+  (add-hook! 'editorconfig-after-apply-functions :append
+    (defun +whitespace-highlight-incorrect-indentation-again-h (props)
+      (when (and (bound-and-true-p whitespace-mode)  ; in case user disabled it
+                 (gethash 'indent_style props))
+        (+whitespace-highlight-incorrect-indentation-h))))
+
   :config
   (setq whitespace-line-column nil
         whitespace-style
@@ -134,9 +142,9 @@ or if the current buffer is read-only or not file-visiting."
   :when (modulep! +trim)
   :hook (doom-first-buffer . ws-butler-global-mode)
   :config
-  (pushnew! ws-butler-global-exempt-modes
-            'special-mode
-            'comint-mode
-            'term-mode
-            'eshell-mode
-            'diff-mode))
+  (dolist (mode '(special-mode
+                  comint-mode
+                  term-mode
+                  eshell-mode
+                  diff-mode))
+    (add-to-list 'ws-butler-global-exempt-modes mode)))

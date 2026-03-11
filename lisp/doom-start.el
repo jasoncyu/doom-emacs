@@ -229,14 +229,14 @@ afterwards."
         (let ((req (pop packages))
               idle-time)
           (if (featurep req)
-              (doom-log "start:iloader: Already loaded %s (%d left)" req (length packages))
+              (doom-log 2 "start:iloader: Already loaded %s (%d left)" req (length packages))
             (condition-case-unless-debug e
                 (and
                  (or (null (setq idle-time (current-idle-time)))
                      (< (float-time idle-time) first-idle-timer)
                      (not
                       (while-no-input
-                        (doom-log "start:iloader: Loading %s (%d left)" req (length packages))
+                        (doom-log 2 "start:iloader: Loading %s (%d left)" req (length packages))
                         ;; If `default-directory' doesn't exist or is
                         ;; unreadable, Emacs throws file errors.
                         (let ((default-directory doom-emacs-dir)
@@ -250,7 +250,7 @@ afterwards."
                (message "Error: failed to incrementally load %S because: %s" req e)
                (setq packages nil)))
             (if (null packages)
-                (doom-log "start:iloader: Finished!")
+                (doom-log 2 "start:iloader: Finished!")
               (run-at-time (if idle-time
                                doom-incremental-idle-timer
                              first-idle-timer)
@@ -293,7 +293,7 @@ If RETURN-P, return the message as a string instead of displaying it."
 ;;      and ~/_emacs) -- and spare us the IO of searching for them, and allows
 ;;      savvy hackers to use $EMACSDIR as their $DOOMDIR, if they wanted.
 ;;   3. Cut down on unnecessary logic in Emacs' bootstrapper.
-;;   4. TODO Offer a more user-friendly error state/screen, especially for
+;;   4. TODO: Offer a more user-friendly error state/screen, especially for
 ;;      errors emitted from Doom's core or the user's config.
 (define-advice startup--load-user-init-file (:override (&rest _) init-doom 100)
   (let ((debug-on-error-from-init-file nil)

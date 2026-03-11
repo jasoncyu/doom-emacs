@@ -7,7 +7,9 @@
   "Command to initialize the jupyter REPL for `+python/open-jupyter-repl'.")
 
 (after! projectile
-  (pushnew! projectile-project-root-files "pyproject.toml" "requirements.txt" "setup.py"))
+  (add-to-list 'projectile-project-root-files "setup.py")
+  (add-to-list 'projectile-project-root-files "requirements.txt")
+  (add-to-list 'projectile-project-root-files "pyproject.toml"))
 
 
 ;;
@@ -73,6 +75,13 @@
              (executable-find "python3"))
     (setq python-shell-interpreter "python3"))
 
+  ;; HACK: Python 3.13's pyrepl mishandles SIGINT under Emacs's comint
+  ;;   (TERM=dumb), particularly on macOS. The ^C character is treated as
+  ;;   literal input rather than triggering an interrupt signal. Disabling
+  ;;   pyrepl forces the classic readline-based REPL which handles signals
+  ;;   correctly. See #8391, also used by VS Code's Python extension.
+  (add-to-list 'python-shell-process-environment "PYTHON_BASIC_REPL=1")
+
   (add-hook! '(python-mode-hook python-ts-mode-hook)
     (defun +python-use-correct-flycheck-executables-h ()
       "Use the correct Python executables for Flycheck."
@@ -100,29 +109,6 @@
   ;; HACK: `python-mode' doesn't update `tab-width' to reflect
   ;;   `python-indent-offset', causing issues anywhere `tab-width' is respected.
   (setq-hook! '(python-mode-hook python-ts-mode-hook) tab-width python-indent-offset))
-
-
-(use-package! pyimport
-  :defer t
-  :init
-  (map! :after python
-        :map python-base-mode-map
-        :localleader
-        :prefix ("i" . "imports")
-        :desc "Insert missing imports" "i" #'pyimport-insert-missing
-        :desc "Remove unused imports"  "R" #'pyimport-remove-unused
-        :desc "Optimize imports"       "o" #'+python/optimize-imports))
-
-
-(use-package! py-isort
-  :defer t
-  :init
-  (map! :after python
-        :map python-base-mode-map
-        :localleader
-        (:prefix ("i" . "imports")
-         :desc "Sort imports"      "s" #'py-isort-buffer
-         :desc "Sort region"       "r" #'py-isort-region)))
 
 
 (use-package! nose
@@ -223,6 +209,13 @@
   :when (modulep! +uv)
   :after python
   :config
+  ;; open uv.lock files in toml-mode
+  (add-to-list 'auto-mode-alist
+               (cons "/uv\\.lock\\'"
+                     (if (and (modulep! :tools tree-sitter)
+                              (fboundp 'toml-ts-mode))
+                         'toml-ts-mode
+                       'conf-toml-mode)))
   ;; HACK: A faster (cached) version of the mode-line segment. See
   ;;   `+python-uv-mode-set-auto-h'.
   (setq uv-mode-mode-line-format '(+python--uv-version ("UV:" +python--uv-version " ")))
@@ -272,11 +265,11 @@
 (use-package! pip-requirements
   :defer t
   :config
-  ;; HACK `pip-requirements-mode' performs a sudden HTTP request to
+  ;; HACK: `pip-requirements-mode' performs a sudden HTTP request to
   ;;   https://pypi.org/simple, which causes unexpected hangs (see #5998). This
   ;;   advice defers this behavior until the first time completion is invoked.
-  ;; REVIEW More sensible behavior should be PRed upstream.
-  (defadvice! +python--init-completion-a (&rest args)
+  ;; REVIEW: More sensible behavior should be PRed upstream.
+  (defadvice! +python--init-completion-a (&rest _)
     "Call `pip-requirements-fetch-packages' first time completion is invoked."
     :before #'pip-requirements-complete-at-point
     (unless pip-packages (pip-requirements-fetch-packages)))

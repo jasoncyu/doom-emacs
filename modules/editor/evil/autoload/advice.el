@@ -55,7 +55,7 @@ more information on modifiers."
                                    (file-relative-name parent)))))
                             ("s"
                              (if (featurep 'evil)
-                                 (when-let (args (evil-delimited-arguments (substring modifier 1) 2))
+                                 (when-let* ((args (evil-delimited-arguments (substring modifier 1) 2)))
                                    (let ((pattern (evil-transform-vim-style-regexp (car args)))
                                          (replace (cadr args)))
                                      (replace-regexp-in-string
@@ -85,7 +85,7 @@ more information on modifiers."
                 (setq evil-auto-indent nil)
                 (goto-char pos)
                 (let ((ws (abs (skip-chars-backward " \t"))))
-                  ;; FIXME oh god why
+                  ;; REVIEW: There must be a better way...
                   (save-excursion
                     (if comment-line-break-function
                         (funcall comment-line-break-function nil)
@@ -107,7 +107,7 @@ more information on modifiers."
                (if comment-line-break-function
                    (funcall comment-line-break-function nil)
                  (comment-indent-new-line)))
-              ;; TODO Find a better way to do this
+              ;; TODO: Find a better way to do this
               ((and (eq major-mode 'haskell-mode)
                     (fboundp 'haskell-indentation-newline-and-indent))
                (setq evil-auto-indent nil)

@@ -361,9 +361,9 @@ Requires `anzu', also `evil-anzu' if using `evil-mode' for compatibility with
 ;;; `+modeline-buffer-identification'
 (defvar-local +modeline--buffer-id-cache nil)
 
-;; REVIEW Generating the buffer's file name can be relatively expensive.
-;;        Compounded with how often the modeline updates this can add up, so
-;;        we cache it ahead of time.
+;; REVIEW: Generating the buffer's file name can be relatively expensive.
+;;   Compounded with how often the modeline updates this can add up, so we cache
+;;   it ahead of time.
 (add-hook! '(change-major-mode-after-body-hook
              ;; In case the user saves the file to a new location
              after-save-hook
@@ -382,7 +382,7 @@ Requires `anzu', also `evil-anzu' if using `evil-mode' for compatibility with
               (unless (or (null default-directory)
                           (null file-name)
                           (file-remote-p file-name))
-                (when-let (project-root (doom-project-root))
+                (when-let* ((project-root (doom-project-root)))
                   (file-relative-name (or buffer-file-truename (file-truename file-name))
                                       (concat project-root "..")))))))))
 
@@ -562,12 +562,13 @@ lines are selected, or the NxM dimensions of a block selection.")
   `(""
     +modeline-modes
     "  "))
-;; TODO (def-modeline! helm ...)
+;; TODO: (def-modeline! helm ...)
 
 
 ;; Other modes
 (set-modeline! :main 'default)
-(set-modeline-hook! '+doom-dashboard-mode-hook 'project)
+(set-modeline-hook! '+doom-dashboard-mode-hook 'project) ; DEPRECATED
+(set-modeline-hook! '+dashboard-mode-hook 'project)
 (set-modeline-hook! 'pdf-tools-enabled-hook 'pdf)
 (set-modeline-hook! '(special-mode-hook
                       image-mode-hook

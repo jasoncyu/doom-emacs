@@ -81,6 +81,18 @@ Fixes #3939: unsortable dired entries on Windows."
   (dirvish-override-dired-mode)
   (set-popup-rule! "^ ?\\*\\(?:[Dd]irvish\\|SIDE :: \\).*" :ignore t)
 
+  ;; HACK: `dirvish-pre-redisplay-h' is called via `pre-redisplay-functions'
+  ;;   for every window that needs redisplay, but it unconditionally calls
+  ;;   `dirvish--redisplay'. When dirvish is open in multiple frames, this
+  ;;   creates a feedback loop: frame A's redisplay triggers frame B's, and
+  ;;   vice versa, causing visible flickering. Guard it so it only fires for
+  ;;   the selected window in its frame. See alexluigit/dirvish#353.
+  ;; REVIEW: PR this upstream!
+  (defadvice! +dired--debounce-dirvish-redisplay-a (fn window)
+    :around #'dirvish-pre-redisplay-h
+    (when (eq (frame-selected-window) window)
+      (funcall fn window)))
+
   ;; Fixes #8038. This setting is for folks who expect to be able to switch back
   ;; to dired buffers where the file is opened from.  In other cases, don't
   ;; recycle sessions. We don't want leftover buffers lying around, especially
@@ -102,7 +114,7 @@ Fixes #3939: unsortable dired entries on Windows."
   (when (modulep! :ui modeline)
     (add-hook! 'dired-mode-hook
       (defun +dired-update-mode-line-height-h ()
-        (when-let (height (bound-and-true-p doom-modeline-height))
+        (when-let* ((height (bound-and-true-p doom-modeline-height)))
           (setq dirvish-mode-line-height height
                 dirvish-header-line-height height)))))
 
@@ -169,10 +181,10 @@ Fixes #3939: unsortable dired entries on Windows."
                persp-before-switch-functions
                projectile-before-switch-project-hook)
     (defun +dired--cleanup-dirvish-h (&rest _)
-      (when-let ((dv (cl-loop for w in (window-list)
-                              if (window-dedicated-p w)
-                              if (with-current-buffer (window-buffer w) (dirvish-curr))
-                              return it)))
+      (when-let* ((dv (cl-loop for w in (window-list)
+                               if (window-dedicated-p w)
+                               if (with-current-buffer (window-buffer w) (dirvish-curr))
+                               return it)))
         (let (dirvish-reuse-session)
           (with-selected-window (dv-root-window dv)
             (dirvish-quit)))))))
@@ -200,9 +212,9 @@ Fixes #3939: unsortable dired entries on Windows."
   ;; deleted directory. Of course I do!
   (setq dired-clean-confirm-killing-deleted-buffers nil)
   ;; Let OS decide how to open certain files
-  (when-let (cmd (cond ((featurep :system 'macos) "open")
-                       ((featurep :system 'linux) "xdg-open")
-                       ((featurep :system 'windows) "start")))
+  (when-let* ((cmd (cond ((featurep :system 'macos) "open")
+                         ((featurep :system 'linux) "xdg-open")
+                         ((featurep :system 'windows) "start"))))
     (setq dired-guess-shell-alist-user
           `(("\\.\\(?:docx\\|pdf\\|djvu\\|eps\\)\\'" ,cmd)
             ("\\.\\(?:jpe?g\\|png\\|gif\\|xpm\\)\\'" ,cmd)

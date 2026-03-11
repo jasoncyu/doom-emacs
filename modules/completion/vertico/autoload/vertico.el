@@ -147,7 +147,7 @@ Supports exporting consult-grep to wgrep, file to wdeired, and consult-location 
      (unwind-protect
          (list
           (consult--read
-           ;; REVIEW Refactor me
+           ;; REVIEW: Refactor me
            (nreverse
             (delete-dups
              (delq
@@ -218,7 +218,8 @@ targets."
   "Runs consult-fd if fd version > 8.6.0 exists, consult-find otherwise.
 See minad/consult#770."
   (interactive "P")
-  ;; TODO this condition was adapted from a similar one in lisp/doom-projects.el, to be replaced with a more robust check post v3
+  ;; REVIEW: This condition was adapted from a similar one in
+  ;;   lisp/doom-projects.el, to be replaced with a more robust check post v3
   (if (when-let*
           ((bin (if (ignore-errors (file-remote-p default-directory nil t))
                     (cl-find-if (doom-rpartial #'executable-find t)
@@ -228,7 +229,7 @@ See minad/consult#770."
                       (cadr (split-string (cdr (doom-call-process bin "--version"))
                                           " " t))))
            ((ignore-errors (version-to-list version))))
-        ;; TODO remove once fd 8.6.0 is widespread enough to be the minimum version for doom
+        ;; REVIEW: Remove once fd 8.6.0 is widespread enough.
         (version< "8.6.0" version))
       (consult-fd dir initial)
     (consult-find dir initial)))
@@ -253,12 +254,12 @@ See minad/consult#770."
        ;; Ignore single dispatcher character
        ((and (= len 1) (alist-get (aref pattern 0) alist)) #'ignore)
        ;; Prefix
-       ((when-let ((style (alist-get (aref pattern 0) alist))
-                   ((not (char-equal (aref pattern (max (1- len) 1)) ?\\))))
+       ((when-let* ((style (alist-get (aref pattern 0) alist))
+                    ((not (char-equal (aref pattern (max (1- len) 1)) ?\\))))
           (cons style (substring pattern 1))))
        ;; Suffix
-       ((when-let ((style (alist-get (aref pattern (1- len)) alist))
-                   ((not (char-equal (aref pattern (max 0 (- len 2))) ?\\))))
+       ((when-let* ((style (alist-get (aref pattern (1- len)) alist))
+                    ((not (char-equal (aref pattern (max 0 (- len 2))) ?\\))))
           (cons style (substring pattern 0 -1))))))))
 
 ;;;###autoload

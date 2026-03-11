@@ -13,9 +13,9 @@
            ;;   and org-loaddefs.el, but Straight doesn't invoke this step, and
            ;;   the former doesn't work if the Org repo is a shallow clone.
            ;;   Rather than impose the network burden of a full clone (and other
-           ;;   redundant work in Org's makefile), I'd rather fake these files
-           ;;   instead. Besides, Straight already produces a org-autoloads.el,
-           ;;   so org-loaddefs.el isn't needed.
+           ;;   redundant and platform unagnostic work in Org's makefile), I'd
+           ;;   rather fake these files instead. Besides, Straight already
+           ;;   produces a org-autoloads.el, so org-loaddefs.el isn't needed.
            :build t
            :pre-build
            (progn
@@ -30,8 +30,19 @@
                  (insert (format "(defun org-release () %S)\n" version)
                          (format "(defun org-git-version (&rest _) \"%s-??-%s\")\n"
                                  version (cdr (doom-call-process "git" "rev-parse" "--short" "HEAD")))
-                         "(provide 'org-version)\n")))))
-  :pin "b7bc0ede67f3e2a477f4d6ad0c46a6d80bca5aea")  ; release_9.7.39
+                         "(provide 'org-version)\n"))))
+           ;; HACK: Org is hardcoded (with file-local variables) to spew some of
+           ;;   its autoloads into org-loaddefs.el file (that is never loaded or
+           ;;   subsumed into Doom's package autoloads), while the rest go into
+           ;;   org-autoloads.el, so we have to manually merge them.
+           ;; REVIEW: Fix this upstream?
+           :post-build
+           (let ((afile (straight--autoloads-file "org")))
+             (with-temp-file afile
+               (insert-file-contents "org-loaddefs.el")
+               (save-excursion (insert "\n"))
+               (insert-file-contents afile))))
+  :pin "89df5bf46ba214db44eea898cc7cacc0b27fd760")  ; release_9.8
 (package! org-contrib
   :recipe (:host github
            :repo "emacsmirror/org-contrib")
@@ -43,7 +54,7 @@
 (package! toc-org :pin "6d3ae0fc47ce79b1ea06cabe21a3c596395409cd")
 (package! org-cliplink :pin "13e0940b65d22bec34e2de4bc8cba1412a7abfbc")
 
-;; TODO Adjust when this is added to GNU ELPA
+;; TODO: Adjust when this is added to GNU ELPA
 (when (modulep! +contacts)
   (package! org-contacts
     :recipe (:host github :repo "doomelpa/org-contacts")
@@ -63,19 +74,13 @@
   (package! evil-org
     :recipe (:host github :repo "doomelpa/evil-org-mode")
     :pin "06518c65ff4f7aea2ea51149d701549dcbccce5d"))
-(when (modulep! :tools pdf)
-  (package! org-pdftools :pin "2b3357828a4c2dfba8f87c906d64035d8bf221f2"))
-(when (modulep! :tools magit)
-  (package! orgit :pin "24c8fe48c477d561c2ce1720223f8c5aec664f4e") ; v2.1.1
-  (when (modulep! :tools magit +forge)
-    (package! orgit-forge :pin "c2116b8701498bd11d8674065a5429d844985e46"))) ; v1.1.1
 (when (modulep! +dragndrop)
   (package! org-download :pin "c8be2611786d1d8d666b7b4f73582de1093f25ac"))
 (when (modulep! +gnuplot)
   (package! gnuplot :pin "4c6b18f71ff7604e2640033207f5a882ddce78af")
   (package! gnuplot-mode :pin "601f6392986f0cba332c87678d31ae0d0a496ce7"))
 (when (modulep! +jupyter)
-  (package! jupyter :pin "de89cbeca890db51ba84aee956658f89aaa0b642"))
+  (package! jupyter :pin "242fdc709ce0faa3b9ee81dcc48cfd791898e6b8"))
 (when (modulep! +journal)
   (package! org-journal :pin "831ecfd50a29057c239b9fa55ebc02d402a6d4a7"))
 (when (modulep! +noter)
@@ -83,7 +88,7 @@
 (when (modulep! +pomodoro)
   (package! org-pomodoro :pin "3f5bcfb80d61556d35fc29e5ddb09750df962cc6"))
 (when (modulep! +pretty)
-  (package! org-modern :pin "9bbc44cc7e085dea24e96f0cc0332ed7fcf349ca")
+  (package! org-modern :pin "b4b5b1c864f1fdf240d1bbd7093529f5a75e8a06")
   (package! org-appear :pin "32ee50f8fdfa449bbc235617549c1bccb503cb09"))
 (when (modulep! +present)
   (package! centered-window
@@ -94,10 +99,10 @@
   (package! revealjs
     :recipe (:host github :repo "hakimel/reveal.js"
              :files ("css" "dist" "js" "plugin"))
-    :pin "33bfe3b233f1a840cd70e834b609ec6f04494a40"))
+    :pin "0753c057773ed3e3ec68a558e9af38d8fce728b8"))
 (when (or (modulep! +roam)
           (modulep! +roam2))
-  (package! org-roam :pin "c72702cf27891899ea6321fe6505ff04befaf43e"))
+  (package! org-roam :pin "7cd906b6f8b18a21766228f074aff24586770934"))
 
 ;;; Babel
 (package! ob-async :pin "9aac486073f5c356ada20e716571be33a350a982")

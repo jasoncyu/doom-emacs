@@ -1,7 +1,7 @@
 ;;; lang/common-lisp/autoload/common-lisp.el -*- lexical-binding: t; -*-
 
-;; HACK Fix #1772: void-variable sly-contribs errors due to sly packages (like
-;; `sly-macrostep') trying to add to `sly-contribs' before it is defined.
+;; HACK: Fix #1772: void-variable sly-contribs errors due to sly packages (like
+;;   `sly-macrostep') trying to add to `sly-contribs' before it is defined.
 ;;;###autoload (defvar sly-contribs '(sly-fancy))
 
 ;;;###autoload
@@ -31,7 +31,10 @@
                              (error "Failed to reload Lisp project in 5 attempts.")
                            (recurse (1+ attempt)))))))
     (recurse 1)
-    (sly-asdf-load-system)))
+    (sly-asdf-load-system
+     (or (sly-asdf-find-current-system)
+         (car sly-asdf-system-history)
+         (user-error "Can't find a system to reload")))))
 
 ;;;###autoload
 (defun +lisp/find-file-in-quicklisp ()

@@ -40,7 +40,7 @@ FUNCTION
 
 (use-package! magit
   :commands magit-file-delete
-  :defer-incrementally (dash f s with-editor git-commit package eieio transient)
+  :defer-incrementally (dash f s with-editor package eieio transient git-commit)
   :init
   (setq magit-auto-revert-mode nil)  ; we do this ourselves further down
   ;; Must be set early to prevent ~/.config/emacs/transient from being created
@@ -66,23 +66,39 @@ FUNCTION
         ;; each, and the two projects happen to have the same name! By unsetting
         ;; `magit-uniquify-buffer-names', magit uses the project's full path as
         ;; its name, preventing such naming collisions.
-        magit-uniquify-buffer-names nil)
+        magit-uniquify-buffer-names nil
+        ;; PERF: Magit calls (and resolves) `magit-git-executable' frequently
+        ;;   enough that a non-absolute path can notably slow it down,
+        ;;   especially on MacOS and Windows, so I resolve it once, the first
+        ;;   time it's needed.
+        magit-git-executable (or
+                              ;; PERF: Inexplicably, the built-in git on MacOS
+                              ;;   is much faster than the one provided by
+                              ;;   homebrew, so use that instead there.
+                              (and (featurep :system 'macos)
+                                   (file-exists-p! "/usr/bin/git"))
+                              (executable-find magit-git-executable)
+                              "git"))
 
   ;; Turn ref links into clickable buttons.
   (add-hook 'magit-process-mode-hook #'goto-address-mode)
 
   ;; Since the project likely now contains new files, purge the projectile cache
   ;; so `projectile-find-file' et all don't produce an stale file list.
+  (defvar +magit--last-hash nil)
   (add-hook! 'magit-refresh-buffer-hook
     (defun +magit-invalidate-projectile-cache-h ()
       ;; Only invalidate the hot cache and nothing else (everything else is
       ;; expensive busy work, and we don't want to slow down magit's
       ;; refreshing).
-      (let (projectile-require-project-root
+      (let ((hash (buffer-hash))
+            projectile-require-project-root
             projectile-enable-caching
             projectile-verbose)
-        (letf! ((#'recentf-cleanup #'ignore))
-          (projectile-invalidate-cache nil)))))
+        (unless (equal +magit--last-hash hash)
+          (letf! ((#'recentf-cleanup #'ignore))
+            (projectile-invalidate-cache nil))
+          (setq-local +magit--last-hash hash)))))
   ;; Use a more efficient strategy to auto-revert buffers whose git state has
   ;; changed: refresh the visible buffers immediately...
   (add-hook 'magit-post-refresh-hook #'+magit-mark-stale-buffers-h)
@@ -142,9 +158,9 @@ FUNCTION
   ;; so magit buffers can be switched to (except for process buffers)
   (add-hook! 'doom-real-buffer-functions
     (defun +magit-buffer-p (buf)
-      (with-current-buffer buf
-        (and (derived-mode-p 'magit-mode)
-             (not (eq major-mode 'magit-process-mode))))))
+      (let ((mode (buffer-local-value 'major-mode buf)))
+        (and (provided-mode-derived-p mode 'magit-mode)
+             (not (eq mode 'magit-process-mode))))))
 
   ;; Clean up after magit by killing leftover magit buffers and reverting
   ;; affected buffers (or at least marking them as need-to-be-reverted).
@@ -154,16 +170,19 @@ FUNCTION
   ;; Close transient with ESC
   (define-key transient-map [escape] #'transient-quit-one)
 
+  (defun +magit-enlargen-fringe-h ()
+    "Make fringe larger in magit."
+    (and (display-graphic-p)
+         (derived-mode-p 'magit-section-mode)
+         +magit-fringe-size
+         (let ((left  (or (car-safe +magit-fringe-size) +magit-fringe-size))
+               (right (or (cdr-safe +magit-fringe-size) +magit-fringe-size)))
+           (unless (and (= left  (or left-fringe-width 0))
+                        (= right (or right-fringe-width 0)))
+             (set-window-fringes nil left right)))))
   (add-hook! 'magit-section-mode-hook
     (add-hook! 'window-configuration-change-hook :local
-      (defun +magit-enlargen-fringe-h ()
-        "Make fringe larger in magit."
-        (and (display-graphic-p)
-             (derived-mode-p 'magit-section-mode)
-             +magit-fringe-size
-             (let ((left  (or (car-safe +magit-fringe-size) +magit-fringe-size))
-                   (right (or (cdr-safe +magit-fringe-size) +magit-fringe-size)))
-               (set-window-fringes nil left right))))))
+      #'+magit-enlargen-fringe-h))
 
   (add-hook! 'magit-diff-visit-file-hook
     (defun +magit-reveal-point-if-invisible-h ()
@@ -171,7 +190,12 @@ FUNCTION
       (if (derived-mode-p 'org-mode)
           (org-reveal '(4))
         (require 'reveal)
-        (reveal-post-command)))))
+        (reveal-post-command))))
+
+  ;; HACK: See magit/magit#5320: large/long status buffers can change the
+  ;;   behavior of motions and TAB in obscure ways.
+  ;; REVIEW: REmove when magit/magit#5320 is addressed.
+  (setq-hook! 'magit-status-mode-hook long-line-threshold nil))
 
 
 (use-package! forge
@@ -203,8 +227,6 @@ FUNCTION
   :when (modulep! +forge)
   :after magit
   :init
-  ;; TODO This needs to either a) be cleaned up or better b) better map things
-  ;; to fit
   (after! evil-collection-magit
     (dolist (binding evil-collection-magit-mode-map-bindings)
       (pcase-let* ((`(,states _ ,evil-binding ,fn) binding))
@@ -247,8 +269,8 @@ FUNCTION
     "gm" #'forge-jump-to-pullreqs)
 
   ;; Fix these keybinds because they are blacklisted
-  ;; REVIEW There must be a better way to exclude particular evil-collection
-  ;;        modules from the blacklist.
+  ;; REVIEW: There must be a better way to exclude particular evil-collection
+  ;;   modules from the blacklist.
   (map! (:map magit-mode-map
          :nv "q" #'+magit/quit
          :nv "Q" #'+magit/quit-all
@@ -275,7 +297,7 @@ FUNCTION
 
   (after! git-rebase
     (dolist (key '(("M-k" . "gk") ("M-j" . "gj")))
-      (when-let (desc (assoc (car key) evil-collection-magit-rebase-commands-w-descriptions))
+      (when-let* ((desc (assoc (car key) evil-collection-magit-rebase-commands-w-descriptions)))
         (setcar desc (cdr key))))
     (evil-define-key* evil-collection-magit-state git-rebase-mode-map
       "gj" #'git-rebase-move-line-down

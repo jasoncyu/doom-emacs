@@ -124,8 +124,8 @@ PLIST can have the following properties:
     ;; `persp-mode' integration: update `default-directory' when switching perspectives
     (add-hook 'persp-created-functions #'+doom-dashboard--persp-record-project-h)
     (add-hook 'persp-activated-functions #'+doom-dashboard--persp-detect-project-h)
-    ;; HACK Fix #2219 where, in GUI daemon frames, the dashboard loses center
-    ;;      alignment after switching (or killing) workspaces.
+    ;; Fix #2219 where, in GUI daemon frames, the dashboard loses center
+    ;; alignment after switching (or killing) workspaces.
     (when (daemonp)
       (add-hook 'persp-activated-functions #'+doom-dashboard-reload-maybe-h))
     (add-hook 'persp-before-switch-functions #'+doom-dashboard--persp-record-project-h)))
@@ -272,7 +272,7 @@ whose dimensions may not be fully initialized by the time this is run."
   (let (buffer-list-update-hook
         window-configuration-change-hook
         window-size-change-functions)
-    (when-let (windows (get-buffer-window-list (doom-fallback-buffer) nil t))
+    (when-let* ((windows (get-buffer-window-list (doom-fallback-buffer) nil t)))
       (dolist (win windows)
         (set-window-start win 0)
         (set-window-fringes win 0 0)
@@ -299,7 +299,7 @@ This and `+doom-dashboard--persp-record-project-h' provides `persp-mode'
 integration with the Doom dashboard. It ensures that the dashboard is always in
 the correct project (which may be different across perspective)."
   (when (bound-and-true-p persp-mode)
-    (when-let (pwd (persp-parameter 'last-project-root))
+    (when-let* ((pwd (persp-parameter 'last-project-root)))
       (+doom-dashboard-update-pwd-h pwd))))
 
 (defun +doom-dashboard--persp-record-project-h (&optional persp &rest _)
@@ -515,7 +515,7 @@ What it is set to is controlled by `+doom-dashboard-pwd-policy'."
     (with-temp-buffer
       (insert-text-button (or (nerd-icons-codicon "nf-cod-octoface" :face 'doom-dashboard-footer-icon :height 1.3 :v-adjust -0.15)
                               (propertize "github" 'face 'doom-dashboard-footer))
-                          'action (lambda (_) (browse-url "https://github.com/hlissner/doom-emacs"))
+                          'action (lambda (_) (browse-url "https://github.com/doomemacs/doomemacs"))
                           'follow-link t
                           'help-echo "Open Doom Emacs github page")
       (buffer-string)))

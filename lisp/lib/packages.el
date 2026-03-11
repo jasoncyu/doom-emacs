@@ -111,7 +111,11 @@ package's name as a symbol, and whose CDR is the plist supplied to its
                   (make-directory repo-dir 'recursive)
                   (let ((default-directory repo-dir))
                     (funcall call "git" "init")
-                    (funcall call "git" "branch" "-m" straight-repository-branch)
+                    ;; HACK: `git branch -m' fails on empty repos with git
+                    ;;   < 2.28. `git symbolic-ref' is a portable alternative
+                    ;;   that works on all git versions. See #8538.
+                    (funcall call "git" "symbolic-ref" "HEAD"
+                             (format "refs/heads/%s" straight-repository-branch))
                     (funcall call "git" "remote" "add" "origin" repo-url
                              "--master" straight-repository-branch)
                     (funcall call "git" "fetch" "origin" pin
@@ -144,9 +148,9 @@ package's name as a symbol, and whose CDR is the plist supplied to its
   (dolist (package packages)
     (let* ((name (car package))
            (repo (symbol-name name)))
-      (when-let (recipe (plist-get (cdr package) :recipe))
+      (when-let* ((recipe (plist-get (cdr package) :recipe)))
         (straight-override-recipe (cons name recipe))
-        (when-let (local-repo (plist-get recipe :local-repo))
+        (when-let* ((local-repo (plist-get recipe :local-repo)))
           (setq repo local-repo)))
       (print-group!
         ;; Only clone the package, don't build them. Straight hasn't been fully
@@ -182,7 +186,7 @@ processed."
   (when (or force-p (not (bound-and-true-p package--initialized)))
     (doom-log "Initializing package.el")
     (require 'package)
-    (package-initialize)
+    (package-initialize t)
     (unless package--initialized
       (error "Failed to initialize package.el")))
   (when (or force-p (null doom-packages))
@@ -309,7 +313,7 @@ non-nil."
 ;;;###autoload
 (defun doom-package-in-module-p (package category &optional module)
   "Return non-nil if PACKAGE was installed by the user's private config."
-  (when-let (modules (doom-package-get package :modules))
+  (when-let* ((modules (doom-package-get package :modules)))
     (or (and (not module) (assq :user modules))
         (member (cons category module) modules))))
 
@@ -375,8 +379,8 @@ also be a list of module keys."
         doom-packages)
     (letf! (defun read-packages (key)
              (with-doom-module key
-               (when-let (file (doom-module-locate-path
-                                key doom-module-packages-file))
+               (when-let* ((file (doom-module-locate-path
+                                  key doom-module-packages-file)))
                  (doom-packages--read file nil 'noerror))))
       (with-doom-context 'package
         (let ((user? (assq :user module-list)))
@@ -426,7 +430,7 @@ also be a list of module keys."
   (doom-initialize-packages)
   (or (get package 'homepage)
       (put package 'homepage
-           (cond ((when-let (location (locate-library (symbol-name package)))
+           (cond ((when-let* ((location (locate-library (symbol-name package))))
                     (with-temp-buffer
                       (if (string-match-p "\\.gz$" location)
                           (jka-compr-insert-file-contents location)
@@ -435,7 +439,7 @@ also be a list of module keys."
                       (let ((case-fold-search t))
                         (when (re-search-forward " \\(?:url\\|homepage\\|website\\): \\(http[^\n]+\\)\n" nil t)
                           (match-string-no-properties 1))))))
-                 ((when-let ((recipe (straight-recipes-retrieve package)))
+                 ((when-let* ((recipe (straight-recipes-retrieve package)))
                     (straight--with-plist (straight--convert-recipe recipe)
                         (host repo)
                       (pcase host
@@ -469,7 +473,7 @@ also be a list of module keys."
 (defun doom/reload-packages ()
   "Reload `doom-packages', `package' and `quelpa'."
   (interactive)
-  ;; HACK straight.el must be loaded for this to work
+  ;; HACK: straight.el must be loaded for this to work
   (message "Reloading packages")
   (doom-initialize-packages t)
   (message "Reloading packages...DONE"))
@@ -524,7 +528,7 @@ also be a list of module keys."
   (interactive)
   (cl-destructuring-bind (&key package plist beg end)
       (doom--package-at-point)
-    (when-let (str (doom--package-to-bump-string package plist))
+    (when-let* ((str (doom--package-to-bump-string package plist)))
       (goto-char beg)
       (delete-region beg end)
       (insert str))))
@@ -689,11 +693,11 @@ Must be run from a magit diff buffer."
                         :test #'equal)))
         (save-excursion
           (while (re-search-forward "^-" nil t)
-            (when-let (pkg (read-package))
+            (when-let* ((pkg (read-package)))
               (cl-pushnew pkg before :test #'equal))))
         (save-excursion
           (while (re-search-forward "^+" nil t)
-            (when-let (pkg (read-package))
+            (when-let* ((pkg (read-package)))
               (cl-pushnew pkg after :test #'equal))))
         (unless (= (length before) (length after))
           (user-error "Uneven number of packages being bumped"))
@@ -846,8 +850,8 @@ Must be run from a magit diff buffer."
 (defun doom-packages--elc-file-outdated-p (file)
   "Check whether the corresponding .elc for `file' is outdated."
   (let ((elc-file (byte-compile-dest-file file)))
-    ;; NOTE Ignore missing elc files, they could be missing due to
-    ;;   `no-byte-compile'. Rebuilding unnecessarily is expensive.
+    ;; Ignore missing elc files, they could be missing due to `no-byte-compile'.
+    ;; Rebuilding unnecessarily is expensive.
     (when (and (file-exists-p elc-file)
                (file-newer-than-file-p file elc-file))
       (doom-log "packages:elc: %s is newer than %s" file elc-file)
@@ -1195,166 +1199,6 @@ Must be run from a magit diff buffer."
                (hash-table-count packages-to-rebuild))
        (doom-packages-ensure)
        t))))
-
-
-;;; PURGE (for the emperor)
-(defun doom-packages--purge-build (build)
-  (let ((build-dir (straight--build-dir build)))
-    (delete-directory build-dir 'recursive)
-    (if (file-directory-p build-dir)
-        (ignore (print! (error "Failed to purg build/%s" build)))
-      (print! (success "Purged build/%s" build))
-      t)))
-
-(defun doom-packages--purge-builds (builds)
-  (if (not builds)
-      (prog1 0
-        (print! (item "No builds to purge")))
-    (print! (start "Purging straight builds..." (length builds)))
-    (print-group!
-     (length
-      (delq nil (mapcar #'doom-packages--purge-build builds))))))
-
-(defun doom-packages--regraft-repo (repo)
-  (unless repo
-    (error "No repo specified for regrafting"))
-  (let ((default-directory (straight--repos-dir repo)))
-    (catch 'skip
-      (unless (file-directory-p ".git")
-        (print! (warn "\rrepos/%s is not a git repo, skipping" repo))
-        (throw 'skip t))
-      (unless (file-in-directory-p default-directory straight-base-dir)
-        (print! (warn "\rSkipping repos/%s because it is local" repo))
-        (throw 'skip t))
-      (let ((before-size (doom-directory-size default-directory)))
-        (doom-call-process "git" "reset" "--hard")
-        (doom-call-process "git" "clean" "-ffd")
-        (if (not (zerop (car (doom-call-process "git" "replace" "--graft" "HEAD"))))
-            (print! (item "\rrepos/%s is already compact\033[1A" repo))
-          (doom-call-process "git" "reflog" "expire" "--expire=all" "--all")
-          (doom-call-process "git" "gc" "--prune=now")
-          (let ((after-size (doom-directory-size default-directory)))
-            (if (equal after-size before-size)
-                (print! (success "\rrepos/%s cannot be compacted further" repo))
-              (print! (success "\rRegrafted repos/%s (from %0.1fKB to %0.1fKB)")
-                      repo before-size after-size))))))
-    t))
-
-(defun doom-packages--regraft-repos (repos)
-  (if (not repos)
-      (prog1 0
-        (print! (item "No repos to regraft")))
-    (print! (start "Regrafting %d repos..." (length repos)))
-    (let ((before-size (doom-directory-size (straight--repos-dir))))
-      (print-group!
-       (prog1 (delq nil (mapcar #'doom-packages--regraft-repo repos))
-         ;; (princ "\r\033[K")
-         (let ((after-size (doom-directory-size (straight--repos-dir))))
-           (print! (success "\rFinished regrafting. Size before: %0.1fKB and after: %0.1fKB (%0.1fKB)")
-                   before-size after-size
-                   (- after-size before-size))))))))
-
-(defun doom-packages--purge-repo (repo)
-  (let ((repo-dir (straight--repos-dir repo)))
-    (when (file-directory-p repo-dir)
-      (delete-directory repo-dir 'recursive)
-      (delete-file (straight--modified-file repo))
-      (if (file-directory-p repo-dir)
-          (ignore (print! (error "Failed to purge repos/%s" repo)))
-        (print! (success "Purged repos/%s" repo))
-        t))))
-
-(defun doom-packages--purge-repos (repos)
-  (if (not repos)
-      (prog1 0
-        (print! (item "No repos to purge")))
-    (print! (start "Purging straight repositories..."))
-    (print-group!
-     (length
-      (delq nil (mapcar #'doom-packages--purge-repo repos))))))
-
-(defun doom-packages--purge-elpa ()
-  (let ((dirs (doom-files-in package-user-dir :type t :depth 0)))
-    (if (not dirs)
-        (prog1 0
-          (print! (item "No ELPA packages to purge")))
-      (print! (start "Purging ELPA packages..."))
-      (dolist (path dirs (length dirs))
-        (condition-case e
-            (print-group!
-             (if (file-directory-p path)
-                 (delete-directory path 'recursive)
-               (delete-file path))
-             (print! (success "Deleted %s") (filename path)))
-          (error
-           (print! (error "Failed to delete %s because: %s")
-                   (filename path)
-                   e)))))))
-
-(defun doom-packages--purge-eln ()
-  (if-let* ((dirs
-             (cl-delete (expand-file-name comp-native-version-dir doom-packages--eln-output-path)
-                        (when (file-directory-p doom-packages--eln-output-path)
-                          (directory-files doom-packages--eln-output-path t "^[^.]" t))
-                        :test #'file-equal-p)))
-      (progn
-        (print! (start "Purging old native bytecode..."))
-        (print-group!
-         (dolist (dir dirs)
-           (print! (item "Deleting %S") (relpath dir doom-packages--eln-output-path))
-           (delete-directory dir 'recursive))
-         (print! (success "Purged %d directory(ies)" (length dirs))))
-        (length dirs))
-    (print! (item "No ELN directories to purge"))
-    0))
-
-(defun doom-packages-purge (&optional elpa-p builds-p repos-p regraft-repos-p eln-p)
-  "Auto-removes orphaned packages and repos.
-
-An orphaned package is a package that isn't a primary package (i.e. doesn't have
-a `package!' declaration) or isn't depended on by another primary package.
-
-If BUILDS-P, include straight package builds.
-If REPOS-P, include straight repos.
-If ELPA-P, include packages installed with package.el (M-x package-install)."
-  (doom-initialize-packages)
-  (doom-packages--barf-if-incomplete)
-  (print! (start "Purging orphaned packages (for the emperor)..."))
-  (quiet! (straight-prune-build-cache))
-  (cl-destructuring-bind (&optional builds-to-purge repos-to-purge repos-to-regraft)
-      (let ((rdirs
-             (and (or repos-p regraft-repos-p)
-                  (straight--directory-files (straight--repos-dir) nil nil 'sort))))
-        (list (when builds-p
-                (let ((default-directory (straight--build-dir)))
-                  (seq-filter #'file-directory-p
-                              (seq-remove (doom-rpartial #'gethash straight--profile-cache)
-                                          (straight--directory-files default-directory nil nil 'sort)))))
-              (when repos-p
-                (seq-remove (doom-rpartial #'straight--checkhash straight--repo-cache)
-                            rdirs))
-              (when regraft-repos-p
-                (seq-filter (doom-rpartial #'straight--checkhash straight--repo-cache)
-                            rdirs))))
-    (print-group!
-     (delq
-      nil (list
-           (if (not builds-p)
-               (ignore (print! (item "Skipping builds")))
-             (/= 0 (doom-packages--purge-builds builds-to-purge)))
-           (if (not elpa-p)
-               (ignore (print! (item "Skipping elpa packages")))
-             (/= 0 (doom-packages--purge-elpa)))
-           (if (not repos-p)
-               (ignore (print! (item "Skipping repos")))
-             (/= 0 (doom-packages--purge-repos repos-to-purge)))
-           (if (not regraft-repos-p)
-               (ignore (print! (item "Skipping regrafting")))
-             (doom-packages--regraft-repos repos-to-regraft))
-           (when (featurep 'native-compile)
-             (if (not eln-p)
-                 (ignore (print! (item "Skipping native bytecode")))
-               (doom-packages--purge-eln))))))))
 
 (provide 'doom-lib '(packages))
 ;;; packages.el ends here

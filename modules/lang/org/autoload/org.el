@@ -19,7 +19,7 @@
       (delete-overlay ov)
       (setq org-inline-image-overlays (delete ov org-inline-image-overlays)))
     (when (or refresh (not overlays))
-      (org-display-inline-images t t beg end)
+      (org-link-preview nil beg end)
       t)))
 
 (defun +org--insert-item (direction)
@@ -349,7 +349,7 @@ Otherwise, falls back to `org-fill-paragraph' to reflow paragraphs."
   (interactive)
   (let ((element (org-element-at-point)))
     (cond ((doom-region-active-p)
-           ;; TODO Perform additional formatting?
+           ;; TODO: Perform additional formatting?
            ;; (save-restriction
            ;;   (narrow-to-region beg end)
            ;;   (org-table-recalculate t)
