@@ -33,6 +33,7 @@ be enabled. If any function returns non-nil, the mode will not be activated."
          (and (featurep 'pgtk)
               (< emacs-major-version 30)))
 
+        indent-bars-no-descend-lists 'skip
         ;; Show indent guides starting from the first column.
         indent-bars-starting-column 0
         ;; Make indent guides subtle; the default is too distractingly colorful.

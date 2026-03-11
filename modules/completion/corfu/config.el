@@ -194,12 +194,14 @@ This function respects the value of `+corfu-want-minibuffer-completion':
 
     ;; Set up `cape-dabbrev' options.
     (add-hook! '(prog-mode-hook
-                 text-mode-hook
+                 ;; too expensive for org-mode
+                 ;; text-mode-hook
                  conf-mode-hook
                  comint-mode-hook
                  minibuffer-setup-hook
                  eshell-mode-hook)
       (defun +corfu-add-cape-dabbrev-h ()
+        ;; cannot set here
         ;; (setq dabbrev-abbrev-char-regexp "[][[:word:]]")
         ;; (add-hook 'completion-at-point-functions (cape-capf-silent #'dabbrev-capf) 20 t)
         (add-hook 'completion-at-point-functions #'cape-dabbrev 20 t)
