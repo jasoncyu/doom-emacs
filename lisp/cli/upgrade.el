@@ -79,7 +79,7 @@ libraries. It is the equivalent of the following shell commands:
            ;; `vc-git--symbolic-ref') won't work; it can't deal with submodules.
            (branch (replace-regexp-in-string
                     "^\\(?:[^/]+/[^/]+/\\)?\\(.+\\)\\(?:~[0-9]+\\)?$" "\\1"
-                    (cdr (sh! "git" "name-rev" "--name-only" "HEAD"))))
+                    (cdr (sh! "git" "name-rev" "--name-only" "--refs=refs/heads/*" "HEAD"))))
            (target-remote (format "%s_%s" doom-upgrade-remote branch)))
       (unless branch
         (error (if (file-exists-p! ".git" doom-emacs-dir)
@@ -102,10 +102,10 @@ libraries. It is the equivalent of the following shell commands:
       (sh! "git" "branch" "-D" target-remote)
       (sh! "git" "remote" "remove" doom-upgrade-remote)
       (unwind-protect
-          (let (result)
+          (progn
             (or (zerop (car (sh! "git" "remote" "add" doom-upgrade-remote doom-upgrade-url)))
                 (error "Failed to add %s to remotes" doom-upgrade-remote))
-            (or (zerop (car (setq result (sh! "git" "fetch" "--force" "--tags" doom-upgrade-remote (format "%s:%s" branch target-remote)))))
+            (or (zerop (car (sh! "git" "fetch" "--force" "--tags" doom-upgrade-remote (format "%s:%s" branch target-remote))))
                 (error "Failed to fetch from upstream"))
 
             (let ((this-rev (cdr (sh! "git" "rev-parse" "HEAD")))

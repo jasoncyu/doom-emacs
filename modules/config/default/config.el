@@ -595,8 +595,9 @@ Continues comments if executed from a commented line."
         :prefix doom-leader-key     "u" #'universal-argument-more
         :prefix doom-leader-alt-key "u" #'universal-argument-more)
 
-  (when (modulep! +bindings)
-    (load! "+evil-bindings")))
+  (unless (doom-context-p 'reload)
+    (when (modulep! +bindings)
+      (load! "+evil-bindings"))))
 
  (t
   (add-hook 'doom-first-buffer-hook #'delete-selection-mode)
@@ -619,6 +620,7 @@ Continues comments if executed from a commented line."
       (when (memq last-command '(er/expand-region er/contract-region))
         (er/contract-region 0))))
 
-  (when (modulep! +bindings)
-    (require 'projectile nil t) ; we need its keybinds immediately
-    (load! "+emacs-bindings"))))
+  (unless (doom-context-p 'reload)
+    (when (modulep! +bindings)
+      (require 'projectile nil t) ; we need its keybinds immediately
+      (load! "+emacs-bindings")))))

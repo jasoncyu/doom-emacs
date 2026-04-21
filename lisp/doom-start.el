@@ -8,19 +8,16 @@
 (defcustom doom-first-input-hook ()
   "Transient hooks run before the first user input."
   :type 'hook
-  :local 'permanent-local
   :group 'doom)
 
 (defcustom doom-first-file-hook ()
   "Transient hooks run before the first interactively opened file."
   :type 'hook
-  :local 'permanent-local
   :group 'doom)
 
 (defcustom doom-first-buffer-hook ()
   "Transient hooks run before the first interactively opened buffer."
   :type 'hook
-  :local 'permanent-local
   :group 'doom)
 
 
@@ -87,10 +84,11 @@
 ;; when it's idle. However, if the idle delay is too long, we run the risk of
 ;; runaway memory usage in busy sessions. And if it's too low, then we may as
 ;; well not be using gcmh at all.
-(setq gcmh-idle-delay 'auto  ; default is 15s
-      gcmh-auto-idle-delay-factor 10
-      gcmh-high-cons-threshold (* 64 1024 1024))  ; 64mb
-(add-hook 'doom-first-buffer-hook #'gcmh-mode)
+(unless (fboundp 'igc-info)
+  (setq gcmh-idle-delay 'auto  ; default is 15s
+        gcmh-auto-idle-delay-factor 10
+        gcmh-high-cons-threshold (* 64 1024 1024))  ; 64mb
+  (add-hook 'doom-first-buffer-hook #'gcmh-mode))
 
 
 ;;; Disable UI elements early
@@ -191,7 +189,7 @@ sub-packages. For example, `org' is comprised of many packages, and might be
 broken up into:
 
   (doom-load-packages-incrementally
-   '(calendar find-func format-spec org-macs org-compat
+   \\='(calendar find-func format-spec org-macs org-compat
      org-faces org-entities org-list org-pcomplete org-src
      org-footnote org-macro ob org org-clock org-agenda
      org-capture))

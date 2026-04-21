@@ -5,10 +5,6 @@
   (add-to-list 'projectile-project-root-files "build.boot")
   (add-to-list 'projectile-project-root-files "project.clj"))
 
-;; Large clojure buffers tend to be slower than large buffers of other modes, so
-;; it should have a lower threshold too.
-(add-to-list 'doom-large-file-size-alist '("\\.\\(?:clj[sc]?\\|dtm\\|edn\\)\\'" . 0.5))
-
 (defvar +clojure-load-clj-refactor-with-lsp nil
   "Whether or not to include clj-refactor along with clojure-lsp.")
 
@@ -77,11 +73,14 @@
   ;; HACK: Rely on `major-mode-remap-defaults' instead (upstream also doesn't
   ;;   check if the grammars are ready before adding these entries, which will
   ;;   bork clojure buffers.
+  (cl-callf2 rassq-delete-all 'clojure-ts-mode auto-mode-alist)
   (cl-callf2 rassq-delete-all 'clojure-ts-clojurescript-mode auto-mode-alist)
   (cl-callf2 rassq-delete-all 'clojure-ts-clojurec-mode auto-mode-alist)
   (cl-callf2 rassq-delete-all 'clojure-ts-clojuredart-mode auto-mode-alist)
   (cl-callf2 rassq-delete-all 'clojure-ts-jank-mode auto-mode-alist)
-  (cl-callf2 rassq-delete-all 'clojure-ts-joker-mode auto-mode-alist))
+  (cl-callf2 rassq-delete-all 'clojure-ts-joker-mode auto-mode-alist)
+  (cl-callf2 rassq-delete-all 'clojure-ts-mode interpreter-mode-alist)
+  (cl-callf2 rassq-delete-all 'clojure-ts-clojurescript-mode interpreter-mode-alist))
 
 
 ;; `cider-mode' is used instead of the typical `cider' package due to the main
@@ -93,16 +92,28 @@
   :hook (clojurec-mode-local-vars . cider-mode)
   :hook (clojurescript-mode-local-vars . cider-mode)
   :hook (clojure-ts-mode-local-vars . cider-mode)
+  :hook (clojure-ts-clojurescript-mode-local-vars . cider-mode)
+  :hook (clojure-ts-clojurec-mode-local-vars . cider-mode)
+  :hook (clojure-ts-clojuredart-mode-local-vars . cider-mode)
+  :hook (clojure-ts-jank-mode-local-vars . cider-mode)
+  :hook (clojure-ts-joker-mode-local-vars . cider-mode)
   :init
   (after! clojure-mode
-    (set-repl-handler! '(clojure-mode clojure-ts-mode
-                         clojurec-mode clojure-ts-clojurec-mode)
+    (set-repl-handler! '(clojure-mode clojurec-mode)
       #'+clojure/open-repl :persist t)
-    (set-repl-handler! '(clojurescript-mode clojure-ts-clojurescript-mode)
+    (set-repl-handler! 'clojurescript-mode
       #'+clojure/open-cljs-repl :persist t)
-    (set-eval-handler! '(clojure-mode clojure-ts-mode
-                         clojurescript-mode clojure-ts-clojurescript-mode
-                         clojurec-mode clojure-ts-clojurec-mode)
+    (set-eval-handler! '(clojure-mode clojurescript-mode clojurec-mode)
+      #'cider-eval-region))
+
+  (after! clojure-ts-mode
+    (set-repl-handler! '(clojure-ts-mode clojurec-ts-mode)
+      #'+clojure/open-repl :persist t)
+    (set-repl-handler! 'clojure-ts-clojurescript-mode
+      #'+clojure/open-cljs-repl :persist t)
+    (set-eval-handler! '(clojure-ts-mode
+                         clojure-ts-clojurescript-mode
+                         clojure-ts-clojurec-mode)
       #'cider-eval-region))
 
   ;; HACK: Fix radian-software/radian#446: CIDER tries to calculate the frame's
@@ -123,7 +134,8 @@
       ("^\\*cider-repl" :quit nil :ttl nil)
       ("^\\*cider-repl-history" :vslot 2 :ttl nil)))
 
-  (setq nrepl-hide-special-buffers t
+  (setq cider-auto-mode nil
+        nrepl-hide-special-buffers t
         nrepl-log-messages nil
         cider-font-lock-dynamically '(macro core function var deprecated)
         cider-overlays-use-font-lock t

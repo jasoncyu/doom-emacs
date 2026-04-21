@@ -186,7 +186,7 @@ Returns OUTPUT."
   (cl-destructuring-bind (&key if indent level verbose title
                                ;; TODO: Implement these
                                _benchmark)
-      (cl-loop for (key val) on body by #'cddr
+      (cl-loop for (key _val) on body by #'cddr
                while (keywordp key)
                collect (pop body)
                collect (pop body))
@@ -261,14 +261,14 @@ based on the print level of the message. For example:
              collect (cons t spec)
              else
              collect (cons (or (eq level t)
-                               (doom-partial
+                               (apply-partially
                                 car
                                 (get level 'print-level)
                                 (get (car spec) 'print-level)))
                            (cadr spec)))))
 
 (defun doom-print--redirect-standard-output (streamspec level &optional old-stream)
-  (let ((old (or old-stream standard-output))
+  (let ((_old (or old-stream standard-output))
         (streams (doom-print--redirect-streams streamspec level)))
     (lambda (ch)
       (let ((str (char-to-string ch)))
@@ -372,7 +372,7 @@ based on the print level of the message. For example:
   "Ensure SEQUENCE is joined with SEPARATOR.
 
 `nil' and empty strings in SEQUENCE are omitted."
-  (mapconcat (doom-partial #'format "%s")
+  (mapconcat (apply-partially #'format "%s")
              (seq-remove (fn! (or (null %)
                                   (and (stringp %)
                                        (string-empty-p %))))

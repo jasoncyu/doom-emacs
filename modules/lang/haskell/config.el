@@ -23,6 +23,7 @@
     #'+haskell/open-repl :persist t)
   ;; Don't kill REPL popup on ESC/C-g
   (set-popup-rule! "^\\*haskell\\*" :quit nil)
+  (set-indent-vars! 'haskell-mode 'haskell-indent-offset)
 
   (add-hook! 'haskell-mode-hook
              #'haskell-collapse-mode ; support folding haskell code blocks

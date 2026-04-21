@@ -94,7 +94,8 @@ If CONSIDER-MODE? is non-nil, returns non-nil if BUF's mode is derived from
 `special-mode'."
   (or (char-equal ?* (aref (buffer-name buf) 0))
       (and consider-mode?
-           (provided-mode-derived-p (buffer-local-value 'major-mode buf) 'special-mode))))
+           (provided-mode-derived-p (buffer-local-value 'major-mode buf)
+                                    'special-mode))))
 
 ;;;###autoload
 (defun doom-temp-buffer-p (buf)
@@ -125,7 +126,7 @@ If CONSIDER-MODE? is non-nil, returns non-nil if BUF's mode is derived from
 
 ;;;###autoload
 (defun doom-real-buffer-p (buffer-or-name)
-  "Returns t if BUFFER-OR-NAME is a 'real' buffer.
+  "Returns t if BUFFER-OR-NAME is a \\='real' buffer.
 
 A real buffer is a useful buffer; a first class citizen in Doom. Real ones
 should get special treatment, because we will be spending most of our time in
@@ -150,14 +151,14 @@ If BUFFER-OR-NAME is omitted or nil, the current buffer is tested."
     (and (buffer-live-p buf)
          (not (doom-temp-buffer-p buf))
          (or (buffer-local-value 'doom-real-buffer-p buf)
-             (provided-mode-derived-p (buffer-local-value 'major-mode buf)
-                                      doom-real-buffer-modes)
+             (apply #'provided-mode-derived-p (buffer-local-value 'major-mode buf)
+                    doom-real-buffer-modes)
              (run-hook-with-args-until-success 'doom-real-buffer-functions buf)
              (not (run-hook-with-args-until-success 'doom-unreal-buffer-functions buf))))))
 
 ;;;###autoload
 (defun doom-unreal-buffer-p (buffer-or-name)
-  "Return t if BUFFER-OR-NAME is an 'unreal' buffer.
+  "Return t if BUFFER-OR-NAME is an \\='unreal' buffer.
 
 See `doom-real-buffer-p' for details on what that means."
   (not (doom-real-buffer-p buffer-or-name)))

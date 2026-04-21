@@ -21,7 +21,7 @@
 
 It is prefilled by the DOOMPATH envvar (a colon-separated list on Linux/macOS,
 semicolon otherwise)."
-  :type '(list directory)
+  :type '(repeat directory)
   :group 'doom-cli)
 
 
@@ -302,7 +302,7 @@ prepended, and the keyword is in front."
 
 COMMAND should either be a command list (e.g. \\='(doom foo bar)) or a
 `doom-cli' struct."
-  (mapconcat (doom-partial #'format "%s")
+  (mapconcat (apply-partially #'format "%s")
              (doom-cli--command command)
              " "))
 
@@ -977,7 +977,7 @@ considered as well."
                  (save-excursion
                    (goto-char (point-max))
                    (buffer-substring (if (re-search-backward "^\\[Return code: 0\\]$" nil t)
-                                         (point-at-bol 2)
+                                         (pos-bol 2)
                                        (point-min))
                                      (point-max))))))
          (error-file (doom-cli--output-file 'error context)))
@@ -1354,74 +1354,6 @@ ARGS are options passed to less. If DOOMPAGER is set, ARGS are ignored."
 ;; (defun doom-cli--exit-editor (args context))  ; TODO: Launch $EDITOR
 
 ;; (defun doom-cli--exit-emacs (args context))   ; TODO: Launch Emacs subsession
-
-
-
-;;
-;;; Migration paths
-
-;; (defvar doom-cli-context-restore-functions
-;;   '(doom-cli-context--restore-legacy-fn)
-;;   "A list of functions intended to unserialize `doom-cli-context'.
-
-;; They all take one argument, the raw data saved to $__DOOMCONTEXT. Each function
-;; must return the version string corresponding to the version of Doom they have
-;; transformed it for.")
-
-;; (defun doom-cli-context-restore (file context)
-;;   "Restore the last restarted context from FILE into CONTEXT."
-;;   (when (and (stringp file)
-;;              (file-exists-p file))
-;;     (when-let* ((data (with-temp-buffer
-;;                         (insert-file-contents file)
-;;                         (read (current-buffer))))
-;;                 (version (if (stringp (car data)) (car data) "0"))
-;;                 (old-context (if (string (car data)) (cdr data) data))
-;;                 (new-context (make-doom-cli-context))
-;;                 (struct-info (cl-loop for (slot _initval . plist) in (cdr (cl-struct-slot-info 'doom-cli-context))
-;;                                       collect (cons (cl-struct-slot-offset 'doom-cli-context slot)
-;;                                                     (cons slot plist)))))
-
-;;       ;; (let ((version (if (stringp (car data)) (car data) "0"))
-;;       ;;       (data    (if (string (car data)) (cdr data) data))
-;;       ;;       (newcontext (make-doom-cli-context)))
-;;       ;;   (dolist (fn doom-cli-context-restore-functions)
-;;       ;;     (setq newcontext (funcall fn newcontext data version))))
-
-;;       (unless (doom-cli-context-p old-context)
-;;         (error "An invalid context was restored from file: %s" file))
-;;       (unless (equal (doom-cli-context-prefix context)
-;;                      (doom-cli-context-prefix old-context))
-;;         (error "Restored context belongs to another script: %s"
-;;                (doom-cli-context-prefix old-context)))
-;;       (pcase-dolist (`(,slot ,_ . ,plist)
-;;                      (cdr (cl-struct-slot-info 'doom-cli-context)))
-;;         (unless (plist-get plist :skip)
-;;           (let* ((idx (cl-struct-slot-offset 'doom-cli-context slot))
-;;                  (old-value (aref old-context idx)))
-;;             (aset context idx
-;;                   (pcase (plist-get plist :type)
-;;                     (`alist
-;;                      (dolist (entry old-value (aref context idx))
-;;                        (setf (alist-get (car entry) (aref context idx)) (cdr entry))))
-;;                     (`buffer
-;;                      (with-current-buffer (aref context idx)
-;;                        (insert old-value)
-;;                        (current-buffer)))
-;;                     (_ old-value))))))
-;;       (run-hook-with-args 'doom-cli-create-context-functions context)
-;;       (delete-file file)
-;;       (doom-log "Restored context: %s" (doom-cli-context-pid context))
-;;       context)))
-
-;; (defun doom-cli-context--restore-legacy-fn (data old-version)
-;;   "Update `doom-cli-context' from <3.0.0 to 3.0.0."
-;;   (when (or (equal old-version "3.0.0-dev")
-;;             (string-match-p "^2\\.0\\." old-version))
-
-;;     "3.0.0"))
-
-;; (defun doom-cli-context--restore-3.1.0-fn (data old-version))
 
 
 ;;
@@ -1908,8 +1840,8 @@ errors to `doom-cli-error-file')."
     (let* ((args (flatten-list args))
            (context (make-doom-cli-context :prefix prefix :whole args))
            (doom-cli--context context)
-           (write-logs-fn (doom-partial #'doom-cli--output-write-logs-h context))
-           (show-benchmark-fn (doom-partial #'doom-cli--output-benchmark-h context)))
+           (write-logs-fn (apply-partially #'doom-cli--output-write-logs-h context))
+           (show-benchmark-fn (apply-partially #'doom-cli--output-benchmark-h context)))
       ;; Clone output to stdout/stderr buffers for logging.
       (doom-cli-redirect-output context
         (doom-log "run!: %s %s" prefix (combine-and-quote-strings args))
@@ -1991,7 +1923,7 @@ errors to `doom-cli-error-file')."
 (defalias 'sh!! #'doom-exec-process)
 
 ;; TODO: Make `git!' into a more sophisticated wrapper around git
-(defalias 'git! (doom-partial #'straight--process-run "git"))
+(defalias 'git! (apply-partially #'straight--process-run "git"))
 
 (defun get! (key) (doom-cli-context-get doom-cli--context key))
 
@@ -2122,7 +2054,7 @@ substring is edited more than once."
                                    (format (format "%%-%ds%%s%%%ds" width width)
                                            "DOOM(1)" title "DOOM(1)")))
                       ("NAME" . ,(concat .command " - " .summary))
-                      ("SYNOPSIS" . ,(doom-cli-help--render-synopsis .synopsis nil t))
+                      ("SYNOPSIS" . ,(doom-cli-help--render-synopsis .synopsis))
                       ("DESCRIPTION" . ,.description))
                   `((nil . ,(doom-cli-help--render-synopsis .synopsis "Usage: "))
                     (nil . ,(string-join (seq-remove #'string-empty-p (list .summary .description))
@@ -2398,7 +2330,7 @@ Recognizes %p (for the prefix) and %c (for the active command).")
                    ((doom-cli-find (list prefix)))))
     (terpri)
     ;; Kill manually so we don't save output to logs.
-    (let (kill-emacs) (kill-emacs 0))))
+    (let (kill-emacs-hook) (kill-emacs 0))))
 
 (defcli! (:root :help)
     ((localonly? ("-g" "--no-global") "Hide global options")

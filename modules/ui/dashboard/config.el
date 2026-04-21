@@ -161,7 +161,7 @@ dashboard reloading is inhibited.")
   :syntax-table nil
   :abbrev-table nil
   (buffer-disable-undo)
-  (setq-local revert-buffer-function #'+dashboard-reload)
+  (setq-local revert-buffer-function #'+dashboard-revert-buffer-fn)
   (setq truncate-lines t)
   (setq-local whitespace-style nil)
   (setq-local show-trailing-whitespace nil)
@@ -179,7 +179,10 @@ dashboard reloading is inhibited.")
   (add-hook 'post-command-hook #'+dashboard-reposition-point-h nil 'local)
   ;; hl-line produces an ugly cut-off line highlight in the dashboard, so don't
   ;; activate it there (by pretending it's already active).
-  (setq-local hl-line-mode t))
+  (setq-local hl-line-mode t)
+  ;; Local variables are never important in the dashboard, and may cause repeat
+  ;; prompts about unsafe/risky variables.
+  (setq-local enable-local-variables nil))
 
 (define-key! +dashboard-mode-map
   [left-margin mouse-1]   #'ignore
@@ -219,10 +222,10 @@ dashboard reloading is inhibited.")
 (defun +dashboard-init-h ()
   "Initializes Doom's dashboard."
   (unless noninteractive
-    ;; Ensure the dashboard becomes Emacs' go-to buffer when there's nothing
-    ;; else to show.
     (setq doom-fallback-buffer-name +dashboard-name
           initial-buffer-choice #'doom-fallback-buffer)
+    ;; Ensure the dashboard becomes Emacs' go-to buffer when there's nothing
+    ;; else to show.
     (unless fancy-splash-image
       (setq fancy-splash-image
             (expand-file-name +dashboard-banner-file
@@ -246,7 +249,8 @@ dashboard reloading is inhibited.")
 
 ;; PERF: Make sure the dashboard is ready early, so as to avoid triggering
 ;;   `doom-first-buffer-hook' later, when switching to it.
-(when (equal (buffer-name) "*scratch*")
+(when (and (doom-context-p 'startup)
+           (equal (buffer-name) "*scratch*"))
   (let (buffer-list-update-hook
         doom-first-buffer-hook)
     (switch-to-buffer +dashboard-name)))
@@ -254,6 +258,10 @@ dashboard reloading is inhibited.")
 
 ;;
 ;;; Hooks
+
+(defun +dashboard-revert-buffer-fn (&optional _ignore-auto _no-confirm)
+  "`revert-buffer-function' for `+dashboard-mode'."
+  (+dashboard-reload t))
 
 (defun +dashboard-reposition-point-h ()
   "Trap the point in the buttons."

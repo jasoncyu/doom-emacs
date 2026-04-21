@@ -18,4 +18,4 @@
 (when (modulep! :lang org)
   (package! ob-gptel
     :recipe (:host github :repo "jwiegley/ob-gptel")
-    :pin "60e704a390d767a7d06c8d3845ba8786b75f7da3"))
+    :pin "cbed018a7d81de9ba8dc3220e1c4d10b7bb29b11"))

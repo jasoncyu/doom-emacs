@@ -629,10 +629,6 @@ relative to `org-directory', unless it is an absolute path."
   (when (modulep! :lang markdown)
     (add-to-list 'org-export-backends 'md))
 
-  (use-package! ox-hugo
-    :when (modulep! +hugo)
-    :after ox)
-
   (use-package! ox-pandoc
     :when (modulep! +pandoc)
     :when (executable-find "pandoc")
@@ -747,9 +743,9 @@ up to be fully-fledged org-mode buffers."
     (if-let* ((buf (org-find-base-buffer-visiting file)))
         buf
       (let ((recentf-exclude '(always))
-            (doom-inhibit-large-file-detection t)
             (doom-inhibit-local-var-hooks t)
             (org-inhibit-startup t)
+            so-long-target-modes
             vc-handled-backends
             enable-local-variables
             find-file-hook)
@@ -1213,20 +1209,28 @@ between the two."
         ;; Recognize a), A), a., A., etc -- must be set before org is loaded.
         org-list-allow-alphabetical t)
 
-  ;; Make most of the default modules opt-in to lighten its first-time load
-  ;; delay. I sincerely doubt most users use them all.
-  (defvar org-modules
-    '(;; ol-w3m
-      ;; ol-bbdb
-      ol-bibtex
-      ;; ol-docview
-      ;; ol-gnus
-      ;; ol-info
-      ;; ol-irc
-      ;; ol-mhe
-      ;; ol-rmail
-      ;; ol-eww
-      ))
+  ;; Make all default modules opt-in to lighten org's first-time load delay. I
+  ;; sincerely doubt users use them all.
+  (defvar org-modules nil)
+  ;; Autoload common or module-specific link types from ol-* libs, so they're
+  ;; available without needlessly loading them up front.
+  (after! org
+    (dolist (spec `((ol-info "info"
+                     :follow org-info-open
+                     :export org-info-export
+                     :store org-info-store-link
+                     :insert-description org-info-description-as-command)
+                    ,@(when (modulep! :emacs eww)
+                        '((ol-eww "eww"
+                           :follow org-eww-open
+                           :store org-eww-store-link)))
+                    ,@(when (modulep! :tools biblo)
+                        '((ol-bibtex "bibtex"
+                           :follow org-bibtex-open
+                           :store org-bibtex-store-link)))))
+      (apply #'org-link-set-parameters (cadr spec) (cddr spec))
+      (mapc (doom-rpartial #'autoload (symbol-name (car spec)))
+            (cl-delete-if #'keywordp (cddr spec)))))
 
   ;;; Custom org modules
   (dolist (flag (doom-module :lang 'org :flags))
@@ -1259,6 +1263,15 @@ between the two."
              #'+org-init-keybinds-h
              #'+org-init-popup-rules-h
              #'+org-init-smartparens-h)
+
+  ;; HACK: Since 9.8, org-agenda fails to properly initialize on first
+  ;;   invokation for some reason. Until this is sorted out, this will
+  ;;   automatically reload it.
+  (add-hook! 'org-agenda-finalize-hook
+    (defun +org--reload-org-agenda-h ()
+      (when (get-buffer-window nil t) ; make sure it's visible
+        (remove-hook 'org-agenda-finalize-hook #'+org--reload-org-agenda-h)
+        (org-agenda-redo nil))))
 
   ;; Wait until an org-protocol link is opened via emacsclient to load
   ;; `org-protocol'. Normally you'd simply require `org-protocol' and use it,
@@ -1299,7 +1312,7 @@ between the two."
     (run-hooks 'org-load-hook))
 
   :config
-  (set-debug-variable! 'org-export-async-debug)
+  (set-debug-var! 'org-export-async-debug)
 
   (set-company-backend! 'org-mode 'company-capf)
   (set-eval-handler! 'org-mode #'+org-eval-handler)

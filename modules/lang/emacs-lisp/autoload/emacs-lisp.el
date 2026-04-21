@@ -1,5 +1,9 @@
 ;;; lang/emacs-lisp/autoload/emacs-lisp.el -*- lexical-binding: t; -*-
 
+(defvar buttercup-suites)
+(defvar pp-max-width)
+
+
 ;;
 ;;; Library
 
@@ -354,7 +358,7 @@ as `+emacs-lisp-non-package-mode' will enable it and disable the other checkers.
 
 (define-minor-mode +emacs-lisp--flymake-non-package-mode
   ""
-  :since "3.0.0"
+  :since "2.1.0"
   (if +emacs-lisp--flymake-non-package-mode
       (progn
         (remove-hook! 'flymake-diagnostic-functions :local #'elisp-flymake-checkdoc #'elisp-flymake-byte-compile)
@@ -364,7 +368,7 @@ as `+emacs-lisp-non-package-mode' will enable it and disable the other checkers.
 
 (define-minor-mode +emacs-lisp--flycheck-non-package-mode
   ""
-  :since "3.0.0"
+  :since "2.1.0"
   (if (not +emacs-lisp--flycheck-non-package-mode)
       (when (get 'flycheck-disabled-checkers 'initial-value)
         (setq-local flycheck-disabled-checkers (get 'flycheck-disabled-checkers 'initial-value))
@@ -409,7 +413,7 @@ Essentially, this means in any elisp file that either:
 
 This generally applies to your private config (`doom-user-dir') or Doom's source
 \(`doom-emacs-dir')."
-  :since "3.0.0"
+  :since "2.1.0"
   (unless (and (or (bound-and-true-p flycheck-mode)
                    (bound-and-true-p flymake-mode))
                (derived-mode-p 'emacs-lisp-mode)

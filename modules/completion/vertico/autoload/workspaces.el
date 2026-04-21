@@ -3,8 +3,8 @@
 
 (defun +vertico--workspace-buffer-state ()
   (let ((preview
-         ;; Only preview in current window and other window.
-         ;; Preview in frames and tabs is not possible since these don't get cleaned up.
+         ;; Only preview in current window and other window. Preview in frames
+         ;; and tabs is not possible since these don't get cleaned up.
          (if (memq consult--buffer-display
                    '(switch-to-buffer switch-to-buffer-other-window))
              (let ((orig-buf (current-buffer))
@@ -34,11 +34,9 @@
 (defun +vertico--workspace-generate-sources ()
   "Generate list of consult buffer sources for all workspaces"
   (let* ((active-workspace (+workspace-current-name))
-         (workspaces (+workspace-list-names))
          (key-range (append (cl-loop for i from ?1 to ?9 collect i)
                             (cl-loop for i from ?a to ?z collect i)
                             (cl-loop for i from ?A to ?Z collect i)))
-         (last-i (length workspaces))
          (i 0))
     (mapcar (lambda (name)
               (cl-incf i)
@@ -56,6 +54,10 @@
                                 (when-let* ((workspace (+workspace-get name t)))
                                   (+workspace-contains-buffer-p buf workspace)))))))
             (+workspace-list-names))))
+
+
+;;
+;;; Commands
 
 (autoload 'consult--multi "consult")
 ;;;###autoload
@@ -91,3 +93,5 @@ buffer will be opened in the current workspace instead."
   (interactive "GFile:")
   (+workspace/new)
   (find-file file))
+
+;;; workspaces.el ends here

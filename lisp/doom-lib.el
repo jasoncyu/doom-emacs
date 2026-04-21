@@ -128,7 +128,7 @@ list is returned as-is."
 ;;
 ;;; Public library
 
-(define-obsolete-function-alias 'doom-enlist 'ensure-list "3.0.0")
+(define-obsolete-function-alias 'doom-enlist 'ensure-list "2.1.0")
 
 (defun doom-unquote (exp)
   "Return EXP unquoted."
@@ -206,7 +206,7 @@ Return non-nil if loading the file succeeds."
 (defun doom-require (feature &optional filename noerror)
   "Like `require', but handles and enhances Doom errors.
 
-Can also load Doom's subfeatures, e.g. (doom-require 'doom-lib 'files)"
+Can also load Doom's subfeatures, e.g. (doom-require \\='doom-lib \\='files)"
   (let ((subfeature (if (symbolp filename) filename)))
     (or (featurep feature subfeature)
         (doom-load
@@ -386,7 +386,7 @@ TRIGGER-HOOK is a list of quoted hooks and/or sharp-quoted functions."
   (let (file-name-handler-alist)
     (file-name-directory (macroexpand '(file!)))))
 
-(define-obsolete-function-alias 'letenv! 'with-environment-variables "3.0.0")
+(define-obsolete-function-alias 'letenv! 'with-environment-variables "2.1.0")
 
 (put 'defun* 'lisp-indent-function 'defun)
 (defmacro letf! (bindings &rest body)
@@ -466,7 +466,7 @@ sessions, this truly suppress all output from FORMS."
        (progn ,@forms)
      (letf! ((standard-output (lambda (&rest _)))
              (defun message (&rest _))
-             (defun load (file &optional noerror nomessage nosuffix must-suffix)
+             (defun load (file &optional noerror _nomessage nosuffix must-suffix)
                (funcall load file noerror t nosuffix must-suffix))
              (defun write-region (start end filename &optional append visit lockname mustbenew)
                (unless visit (setq visit 'no-message))
@@ -488,8 +488,8 @@ echo-area, but not to *Messages*."
                (save-silently t))
            (prog1 ,@forms (message ""))))))
 
-(define-obsolete-function-alias 'eval-if! 'static-if "3.0.0")
-(define-obsolete-function-alias 'eval-when! 'static-when "3.0.0")
+(define-obsolete-function-alias 'eval-if! 'static-if "2.1.0")
+(define-obsolete-function-alias 'eval-when! 'static-when "2.1.0")
 
 (defmacro versionp! (v1 comp v2 &rest comps)
   "Perform compound version checks.
@@ -556,10 +556,10 @@ ARGLIST."
 (setplist 'doom--fn-crawl '(%2 2 %3 3 %4 4 %5 5 %6 6 %7 7 %8 8 %9 9))
 (defun doom--fn-crawl (data args)
   (cond ((symbolp data)
-         (when-let
-             (pos (cond ((eq data '%*) 0)
-                        ((memq data '(% %1)) 1)
-                        ((get 'doom--fn-crawl data))))
+         (when-let*
+             ((pos (cond ((eq data '%*) 0)
+                         ((memq data '(% %1)) 1)
+                         ((get 'doom--fn-crawl data)))))
            (when (and (= pos 1)
                       (aref args 1)
                       (not (eq data (aref args 1))))
@@ -622,14 +622,15 @@ or aliases."
   (declare (doc-string 1))
   `(lambda (&rest _) (interactive) ,@body))
 
-(defmacro cmd!! (command &optional prefix-arg &rest args)
+(defmacro cmd!! (command &optional arg &rest args)
   "Returns a closure that interactively calls COMMAND with ARGS and PREFIX-ARG.
+
 Like `cmd!', but allows you to change `current-prefix-arg' or pass arguments to
 COMMAND. This macro is meant to be used as a target for keybinds (e.g. with
 `define-key' or `map!')."
   (declare (doc-string 1) (pure t) (side-effect-free t))
   `(lambda (arg &rest _) (interactive "P")
-     (let ((current-prefix-arg (or ,prefix-arg arg)))
+     (let ((current-prefix-arg (or ,arg arg)))
        (,(if args
              #'funcall-interactively
            #'call-interactively)
@@ -834,18 +835,18 @@ issues"
 ;; DEPRECATED: Remove in v3.0
 (defmacro appendq! (sym &rest lists)
   "Append LISTS to SYM in place."
-  (declare (obsolete "Use `cl-callf2' instead" "3.0.0"))
+  (declare (obsolete "Use `cl-callf2' instead" "2.1.0"))
   `(setq ,sym (append ,sym ,@lists)))
 
 ;; DEPRECATED: Remove in v3
-(define-obsolete-function-alias 'setq! 'setopt "3.0.0")
+(define-obsolete-function-alias 'setq! 'setopt "2.1.0")
 
 ;; DEPRECATED: Remove in v3.0
 (defmacro delq! (elt list &optional fetcher)
   "`delq' ELT from LIST in-place.
 
 If FETCHER is a function, ELT is used as the key in LIST (an alist)."
-  (declare (obsolete "Use `cl-callf2' or `alist-get' instead" "3.0.0"))
+  (declare (obsolete "Use `cl-callf2' or `alist-get' instead" "2.1.0"))
   `(setq ,list (delq ,(if fetcher
                           `(funcall ,fetcher ,elt ,list)
                         elt)
@@ -855,7 +856,7 @@ If FETCHER is a function, ELT is used as the key in LIST (an alist)."
 (defmacro pushnew! (place &rest values)
   "Push VALUES sequentially into PLACE, if they aren't already present.
 This is a variadic `cl-pushnew'."
-  (declare (obsolete "Use a loop with `add-to-list' or `cl-pushnew' instead" "3.0.0"))
+  (declare (obsolete "Use a loop with `add-to-list' or `cl-pushnew' instead" "2.1.0"))
   (let ((var (make-symbol "result")))
     `(dolist (,var (list ,@values) (with-no-warnings ,place))
        (cl-pushnew ,var ,place :test #'equal))))
@@ -863,7 +864,7 @@ This is a variadic `cl-pushnew'."
 ;; DEPRECATED: Remove in v3.0
 (defmacro prependq! (sym &rest lists)
   "Prepend LISTS to SYM in place."
-  (declare (obsolete "Use `cl-callf2' instead" "3.0.0"))
+  (declare (obsolete "Use `cl-callf2' instead" "2.1.0"))
   `(setq ,sym (append ,@lists ,sym)))
 
 
@@ -1546,7 +1547,7 @@ in these blocks dictates their load order (unless given an explicit :depth)."
      t))
 
 ;; DEPRECATED: Remove in v3
-(define-obsolete-function-alias 'featurep! 'modulep! "3.0.0")
+(define-obsolete-function-alias 'featurep! 'modulep! "2.1.0")
 
 (defmacro modulep! (group &optional module &rest flags)
   "Return t if :GROUP MODULE (and +FLAGS) are enabled.
@@ -1598,7 +1599,7 @@ For more about modules and flags, see `doom!'."
 ;;; `doom-package'
 
 (cl-defmacro package!
-    (name &rest plist &key built-in recipe ignore _type _pin _disable _env)
+    (name &rest plist &key built-in recipe ignore _type _pin _disable _env _freeze)
   "Declares a package and how to install it (if applicable).
 
 This macro is declarative and does not load nor install packages. It is used to
@@ -1633,11 +1634,13 @@ Accepts the following properties:
  :built-in BOOL|'prefer
    Same as :ignore if the package is a built-in Emacs package. This is more to
    inform help commands like `doom/help-packages' that this is a built-in
-   package. If set to 'prefer, the package will not be installed if it is
+   package. If set to \\='prefer, the package will not be installed if it is
    already provided by Emacs.
  :env ALIST
    Parameters and envvars to set while the package is building. If these values
-   change, the package will be rebuilt on next 'doom sync'.
+   change, the package will be rebuilt on next \\='doom sync'.
+ :freeze BOOL
+   Whether or not bump commands will touch this package.
 
 Returns t if package is successfully registered, and nil if it was disabled
 elsewhere."

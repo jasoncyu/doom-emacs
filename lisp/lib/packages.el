@@ -115,7 +115,7 @@ package's name as a symbol, and whose CDR is the plist supplied to its
                     ;;   < 2.28. `git symbolic-ref' is a portable alternative
                     ;;   that works on all git versions. See #8538.
                     (funcall call "git" "symbolic-ref" "HEAD"
-                             (format "refs/heads/%s" straight-repository-branch))
+                             (format "refs/heads/%s" branch))
                     (funcall call "git" "remote" "add" "origin" repo-url
                              "--master" straight-repository-branch)
                     (funcall call "git" "fetch" "origin" pin
@@ -247,7 +247,7 @@ processed."
   "Resolve and return PACKAGE's (symbol) local-repo property."
   (if-let* ((recipe (copy-sequence (doom-package-recipe package)))
             (recipe (if (and (not (plist-member recipe :type))
-                             (memq (plist-get recipe :host) '(github gitlab bitbucket)))
+                             (memq (plist-get recipe :host) '(github gitlab bitbucket codeberg)))
                         (plist-put recipe :type 'git)
                       recipe))
             (repo (if-let* ((local-repo (plist-get recipe :local-repo)))
@@ -267,7 +267,7 @@ processed."
       plist)))
 
 ;;;###autoload
-(defun doom-package-dependencies (package &optional recursive noerror)
+(defun doom-package-dependencies (package &optional recursive _noerror)
   "Return a list of dependencies for a package.
 
 If RECURSIVE is `tree', return a tree of dependencies.
@@ -319,8 +319,8 @@ non-nil."
 
 ;;;###autoload
 (defun doom-package-backend (package)
-  "Return 'straight, 'builtin, 'elpa or 'other, depending on how PACKAGE is
-installed."
+  "Return \\='straight, \\='builtin, \\='elpa or \\='other, depending on how
+PACKAGE is installed."
   (cond ((gethash (symbol-name package) straight--build-cache)
          'straight)
         ((or (doom-package-built-in-p package)
@@ -374,7 +374,6 @@ also be a list of module keys."
   (let ((module-list (cond ((null module-list) (doom-module-list))
                            ((symbolp module-list) (doom-module-list 'all))
                            (module-list)))
-        (packages-file doom-module-packages-file)
         doom-disabled-packages
         doom-packages)
     (letf! (defun read-packages (key)
@@ -493,7 +492,7 @@ also be a list of module keys."
          (cdr recipe))))))
 
 (defun doom--package-to-bump-string (package plist)
-  "Return a PACKAGE and its PLIST in 'username/repo@commit' format."
+  "Return a PACKAGE and its PLIST in \\='username/repo@commit' format."
   (format "%s@%s"
           (plist-get (doom--package-merge-recipes package plist) :repo)
           (substring-no-properties (plist-get plist :pin) 0 12)))
@@ -546,12 +545,14 @@ also be a list of module keys."
 ;;;###autoload
 (defun doom/bump-package-at-point (&optional select)
   "Inserts or updates a `:pin' for the `package!' statement at point.
-Grabs the latest commit id of the package using 'git'."
+Grabs the latest commit id of the package using git."
   (interactive "P")
   (doom-initialize-packages)
-  (cl-destructuring-bind (&key package plist beg end)
+  (cl-destructuring-bind (&key package plist _beg end)
       (or (doom--package-at-point)
           (user-error "Not on a `package!' call"))
+    (when (plist-get plist :freeze)
+      (user-error "%s: package is frozen" package))
     (let* ((recipe (doom--package-merge-recipes package plist))
            (branch (plist-get recipe :branch))
            (oldid (or (plist-get plist :pin)
@@ -1022,7 +1023,7 @@ Must be run from a magit diff buffer."
                                                     (env (plist-get plist :env)))
                                           (cl-loop for (var . val) in env
                                                    if (and (symbolp var)
-                                                           (string-prefix-p "_" (symbol-name var)))
+                                                           (not (string-prefix-p "_" (symbol-name var))))
                                                    do (set-default var val)
                                                    else if (and (stringp var) val)
                                                    do (setenv var val))))

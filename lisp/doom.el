@@ -110,8 +110,7 @@
 ;; to be refreshed.
 (let ((old-version (eval-when-compile emacs-major-version)))
   (unless (= emacs-major-version old-version)
-    (user-error (concat "Doom was compiled with Emacs %s, but was loaded with %s. Run 'doom sync' to"
-                        "recompile it.")
+    (user-error (concat "Doom core was compiled with Emacs %s, but loaded with %s. Recompile it!")
                 emacs-major-version old-version)))
 
 ;;; Custom features & global constants
@@ -175,17 +174,17 @@
   (defconst MODULES     (featurep 'dynamic-modules))
   (defconst NATIVECOMP  (featurep 'native-compile))
 
-  (make-obsolete-variable 'IS-MAC     "Use (featurep :system 'macos) instead" "3.0.0")
-  (make-obsolete-variable 'IS-LINUX   "Use (featurep :system 'linux) instead" "3.0.0")
-  (make-obsolete-variable 'IS-WINDOWS "Use (featurep :system 'windows) instead" "3.0.0")
-  (make-obsolete-variable 'IS-BSD     "Use (featurep :system 'bsd) instead" "3.0.0")
-  (make-obsolete-variable 'EMACS28+   "Use (>= emacs-major-version 28) instead" "3.0.0")
-  (make-obsolete-variable 'EMACS29+   "Use (>= emacs-major-version 29) instead" "3.0.0")
-  (make-obsolete-variable 'MODULES    "Use (featurep 'dynamic-modules) instead" "3.0.0")
-  (make-obsolete-variable 'NATIVECOMP "Use (featurep 'native-compile) instead" "3.0.0")
+  (make-obsolete-variable 'IS-MAC     "Use (featurep :system 'macos) instead" "2.1.0")
+  (make-obsolete-variable 'IS-LINUX   "Use (featurep :system 'linux) instead" "2.1.0")
+  (make-obsolete-variable 'IS-WINDOWS "Use (featurep :system 'windows) instead" "2.1.0")
+  (make-obsolete-variable 'IS-BSD     "Use (featurep :system 'bsd) instead" "2.1.0")
+  (make-obsolete-variable 'EMACS28+   "Use (>= emacs-major-version 28) instead" "2.1.0")
+  (make-obsolete-variable 'EMACS29+   "Use (>= emacs-major-version 29) instead" "2.1.0")
+  (make-obsolete-variable 'MODULES    "Use (featurep 'dynamic-modules) instead" "2.1.0")
+  (make-obsolete-variable 'NATIVECOMP "Use (featurep 'native-compile) instead" "2.1.0")
 
-  (define-obsolete-variable-alias 'doom-private-dir 'doom-user-dir "3.0.0")
-  (define-obsolete-variable-alias 'doom-etc-dir 'doom-data-dir "3.0.0"))
+  (define-obsolete-variable-alias 'doom-private-dir 'doom-user-dir "2.1.0")
+  (define-obsolete-variable-alias 'doom-etc-dir 'doom-data-dir "2.1.0"))
 
 ;; HACK: Silence obnoxious obsoletion warnings about (if|when)-let in >=31.
 ;;   These warnings are unhelpful to end-users, and many packages use these
@@ -220,11 +219,11 @@
   :link '(url-link :tag "Website" "https://doomemacs.org")
   :group 'emacs)
 
-(defconst doom-version "3.0.0-pre"
+(defconst doom-version "2.1.0"
   "Current version of Doom Emacs core.")
 
 ;; DEPRECATED: Remove these when the modules are moved out of core.
-(defconst doom-modules-version "26.04.0-pre"
+(defconst doom-modules-version "26.05.0-pre"
   "Current version of Doom Emacs.")
 
 (defvar doom-init-time nil
@@ -489,8 +488,8 @@ uses a straight or package.el command directly).")
       (define-advice tty-run-terminal-initialization (:override (&rest _) defer)
         (advice-remove #'tty-run-terminal-initialization #'tty-run-terminal-initialization@defer)
         (add-hook 'window-setup-hook
-                  (doom-partial #'tty-run-terminal-initialization
-                                (selected-frame) nil t))))
+                  (apply-partially #'tty-run-terminal-initialization
+                                   (selected-frame) nil t))))
 
     ;; These optimizations are brittle, difficult to debug, and obscure other
     ;; issues, so bow out when debug mode is on.
@@ -602,8 +601,9 @@ Otherwise, `en/disable-command' (in novice.el.gz) is hardcoded to write them to
 (when (boundp 'native-comp-eln-load-path)
   ;; Don't store eln files in ~/.emacs.d/eln-cache (where they can easily be
   ;; deleted by 'doom upgrade').
-  ;; REVIEW: Advise `startup-redirect-eln-cache' when 28 support is dropped.
-  (add-to-list 'native-comp-eln-load-path (expand-file-name "eln/" doom-profile-cache-dir))
+  (setq native-comp-eln-load-path
+        (cons (expand-file-name "eln/" doom-profile-cache-dir)
+              (cdr native-comp-eln-load-path)))
 
   ;; UX: Suppress compiler warnings and don't inundate users with their popups.
   ;;   They are rarely more than warnings, so are safe to ignore.
@@ -631,7 +631,7 @@ Otherwise, `en/disable-command' (in novice.el.gz) is hardcoded to write them to
   (define-advice comp-run-async-workers (:around (fn &rest args) dont-litter-tmpdir)
     "Normally, native-comp writes a ton to /tmp. This advice redirects this IO
 to `doom-profile-cache-dir' instead, so it doesn't OOM tmpfs users and can be
-safely cleaned up with 'doom sync' or 'doom gc'."
+safely cleaned up with \\='doom sync' or \\='doom gc'."
     (let ((temporary-file-directory (expand-file-name "comp/" doom-profile-cache-dir)))
       (make-directory temporary-file-directory t)
       (apply fn args)))
@@ -644,7 +644,7 @@ safely cleaned up with 'doom sync' or 'doom gc'."
     ;;   to consult this variable when building packages.
     (require 'comp-run nil t)
     ;; HACK: Disable native-compilation for some troublesome packages
-    (mapc (doom-partial #'add-to-list 'native-comp-deferred-compilation-deny-list)
+    (mapc (apply-partially #'add-to-list 'native-comp-deferred-compilation-deny-list)
           (list "/seq-tests\\.el\\'"
                 "/emacs-jupyter.*\\.el\\'"
                 "/evil-collection-vterm\\.el\\'"
@@ -810,15 +810,7 @@ appropriately against `noninteractive' or the `cli' context."
           (doom-run-hook-on 'doom-first-buffer-hook '(find-file-hook doom-switch-buffer-hook)
                             (lambda ()
                               (not (member (buffer-name)
-                                           (list "*scratch*" (buffer-name (doom-fallback-buffer)))))))
-
-          ;; If the user's already opened something (e.g. with command-line
-          ;; arguments), then we should assume nothing about the user's
-          ;; intentions and simply treat this session as fully initialized.
-          (add-hook! 'doom-after-init-hook :depth 100
-            (defun doom-run-first-hooks-if-files-open-h ()
-              (when file-name-history
-                (doom-run-hooks 'doom-first-file-hook 'doom-first-buffer-hook))))
+                                           `("*scratch*" ,doom-fallback-buffer-name)))))
 
           ;; These fire `MAJOR-MODE-local-vars-hook' hooks, which is a Doomism.
           ;; See the `MODE-local-vars-hook' section above.
@@ -851,7 +843,7 @@ appropriately against `noninteractive' or the `cli' context."
         ;; be generated/loaded yet.
         (require 'seq)
         (require 'map)
-        (mapc (doom-partial #'doom-require 'doom-lib)
+        (mapc (apply-partially #'doom-require 'doom-lib)
               '(process
                 system
                 git
@@ -897,15 +889,23 @@ appropriately against `noninteractive' or the `cli' context."
 
 Triggers `doom-after-init-hook' and sets `doom-init-time.'"
   (when (doom-context-pop 'startup)
+    ;; If the user's already opened something (e.g. with command-line
+    ;; arguments), then we should assume nothing about the user's intentions and
+    ;; simply treat this session as fully initialized.
+    (when (and file-name-history (doom-context-p 'emacs))
+      (doom-run-hooks 'doom-first-file-hook 'doom-first-buffer-hook))
+
     (setq doom-init-time (float-time (time-subtract (current-time) before-init-time)))
     (doom-run-hooks 'doom-after-init-hook)
 
-    ;; If `gc-cons-threshold' hasn't been reset at this point, we reset it by
-    ;; force (without overwriting `gcmh' or the user's config). If this isn't
-    ;; done, this session will be prone to freezing and crashes. This also
-    ;; handles the case where the user has `gcmh' disabled.
-    (when (eq (default-value 'gc-cons-threshold) most-positive-fixnum)
-      (setq-default gc-cons-threshold (* 16 1024 1024)))
+    ;; If `gc-cons-threshold' and `gc-cons-percentage' haven't been reset at
+    ;; this point, do it now (without overwriting `gcmh' or the user's config).
+    ;; If not done, the session may see freezing and crashes. Also handles the
+    ;; case where the user has `gcmh' disabled (e.g. users on the IGC branch).
+    (if (= (default-value 'gc-cons-threshold) most-positive-fixnum)
+        (setq-default gc-cons-threshold (* 16 1024 1024)))
+    (if (= (default-value 'gc-cons-percentage) 1.0)
+        (setq-default gc-cons-percentage 0.1))
     t))
 
 (provide 'doom)

@@ -1,11 +1,19 @@
 ;;; lang/emacs-lisp/config.el -*- lexical-binding: t; -*-
 
-(defvar +emacs-lisp-enable-extra-fontification t
-  "If non-nil, highlight special forms, and defined functions and variables.")
+(defgroup +emacs-lisp nil
+  "Enhances support for Emacs Lisp in Emacs."
+  :group 'doom+)
 
-(defvar +emacs-lisp-outline-regexp "[ \t]*;;;\\(;*\\**\\) [^ \t\n]"
+(defcustom +emacs-lisp-enable-extra-fontification t
+  "If non-nil, highlight special forms, and defined functions and variables."
+  :type 'boolean
+  :group '+emacs-lisp)
+
+(defcustom +emacs-lisp-outline-regexp "[ \t]*;;;\\(;*\\**\\) [^ \t\n]"
   "Regexp to use for `outline-regexp' in `emacs-lisp-mode'.
-This marks a foldable marker for `outline-minor-mode' in elisp buffers.")
+This marks a foldable marker for `outline-minor-mode' in elisp buffers."
+  :type 'regexp
+  :group '+emacs-lisp)
 
 (defvar +emacs-lisp-linter-warnings
   '(not free-vars    ; don't complain about unknown variables
@@ -68,20 +76,6 @@ Use `+emacs-lisp/change-working-buffer' to change this. Only applies to
     ;; hideshow for that.
     outline-regexp +emacs-lisp-outline-regexp
     outline-level #'+emacs-lisp-outline-level)
-
-  ;; DEPRECATED: Remove when 27.x support is dropped.
-  (when (< emacs-major-version 28)
-    ;; As of Emacs 28+, `emacs-lisp-mode' uses a shorter label in the mode-line
-    ;; ("ELisp/X", where X = l or d, depending on `lexical-binding'). In <=27,
-    ;; it uses "Emacs-Lisp". The former is more useful, so I backport it:
-    (setq-hook! 'emacs-lisp-mode-local-vars-hook
-      mode-name `("ELisp"
-                  (lexical-binding (:propertize "/l"
-                                    help-echo "Using lexical-binding mode")
-                                   (:propertize "/d"
-                                    help-echo "Using old dynamic scoping mode"
-                                    face warning
-                                    mouse-face mode-line-highlight)))))
 
   ;; Introduces logic to improve plist indentation in emacs-lisp-mode.
   (advice-add #'calculate-lisp-indent :override #'+emacs-lisp--calculate-lisp-indent-a)
@@ -156,6 +150,7 @@ Use `+emacs-lisp/change-working-buffer' to change this. Only applies to
           "v" #'find-variable
           "l" #'find-library)))
 
+
 (use-package! ielm
   :defer t
   :config
@@ -195,10 +190,26 @@ Use `+emacs-lisp/change-working-buffer' to change this. Only applies to
 (remove-hook 'emacs-lisp-mode-hook #'overseer-enable-mode)
 
 
+(use-package! package-lint
+  :when (modulep! :checkers syntax)
+  :defer t
+  :config
+  (setq package-lint--sane-prefixes
+        (concat "\\`\\(?:doom-\\(?:package\\|source\\|module\\)\\)\\|"
+                (with-memoization (get 'package-lint--sane-prefixes 'initial-value)
+                  package-lint--sane-prefixes))))
+
+
 (use-package! flycheck-package
   :when (modulep! :checkers syntax -flymake)
   :after flycheck
   :config (flycheck-package-setup))
+
+
+(use-package! package-lint-flymake
+  :when (modulep! :checkers syntax +flymake)
+  :after flymake
+  :config (package-lint-flymake-setup))
 
 
 (use-package! elisp-demos

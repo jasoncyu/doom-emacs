@@ -1,16 +1,22 @@
 ;;; editor/evil/config.el -*- lexical-binding: t; -*-
 
-(defvar +evil-want-o/O-to-continue-comments t
+(defcustom +evil-want-o/O-to-continue-comments t
   "If non-nil, the o/O keys will continue comment lines if the point is on a
-line with a linewise comment.")
+line with a linewise comment."
+  :type 'boolean
+  :group '+evil)
 
-(defvar +evil-want-move-window-to-wrap-around nil
-  "If non-nil, `+evil/window-move-*' commands will wrap around.")
+(defcustom +evil-want-move-window-to-wrap-around nil
+  "If non-nil, `+evil/window-move-*' commands will wrap around."
+  :type 'boolean
+  :group '+evil)
 
-(defvar +evil-preprocessor-regexp "^\\s-*#[a-zA-Z0-9_]"
+(defcustom +evil-preprocessor-regexp "^\\s-*#[a-zA-Z0-9_]"
   "The regexp used by `+evil/next-preproc-directive' and
 `+evil/previous-preproc-directive' on ]# and [#, to jump between preprocessor
-directives. By default, this only recognizes C directives.")
+directives. By default, this only recognizes C directives."
+  :type 'regexp
+  :group '+evil)
 
 
 ;;
@@ -65,7 +71,7 @@ directives. By default, this only recognizes C directives.")
 
   ;; Slow this down from 0.02 to prevent blocking in large or folded buffers
   ;; like magit while incrementally highlighting matches.
-  (setq-hook! '(magit-mode-hook so-long-minor-mode-hook)
+  (setq-hook! '(special-mode-hook so-long-minor-mode-hook)
     evil-ex-hl-update-delay 0.25)
 
   :config
@@ -101,26 +107,23 @@ directives. By default, this only recognizes C directives.")
         '(("^\\*evil-registers" :size 0.3)
           ("^\\*Command Line"   :size 8)))))
 
-  ;; Change the cursor color in emacs state. We do it this roundabout way to
-  ;; ensure changes in theme doesn't break these colors.
-  (add-hook! '(doom-load-theme-hook doom-after-modules-config-hook)
+  ;; We want to update the colors after a new theme has been enabled, but this
+  ;; is tricky: whenever a cursor color is applied, Emacs will automatically
+  ;; change the 'cursor face accordingly to keep it in sync. As a result, we
+  ;; read and store the new theme colors as early as possible, and in particular
+  ;; before evil performs its next cursor refresh.
+  (add-hook! '(doom-load-theme-hook doom-after-modules-config-hook) :depth -100
     (defun +evil-update-cursor-color-h ()
+      ;; Use a flashy color for emacs state.
       (put 'cursor 'evil-emacs-color  (face-foreground 'warning))
       (put 'cursor 'evil-normal-color (face-background 'cursor))))
-
   (defun +evil-default-cursor-fn ()
     (evil-set-cursor-color (get 'cursor 'evil-normal-color)))
   (defun +evil-emacs-cursor-fn ()
     (evil-set-cursor-color (get 'cursor 'evil-emacs-color)))
 
-  ;; HACK: Ensure `evil-shift-width' always matches `tab-width'; evil does not
-  ;;   police this itself, so we must. Except in org-mode, where `tab-width'
-  ;;   *must* default to 8, which isn't a sensible default for
-  ;;   `evil-shift-width'.
-  (add-hook! 'after-change-major-mode-hook
-    (defun +evil-adjust-shift-width-h ()
-      (unless (derived-mode-p 'org-mode)
-        (setq-local evil-shift-width tab-width))))
+  ;; HACK: Ensure `evil-shift-width' always matches `tab-width'.
+  (set-indent-vars! t 'evil-shift-width)
 
 
   ;; --- keybind fixes ----------------------
@@ -326,11 +329,13 @@ don't offer any/enough real value to users.")
   :hook (LaTeX-mode . embrace-LaTeX-mode-hook)
   :hook (LaTeX-mode . +evil-embrace-latex-mode-hook-h)
   :hook (org-mode . embrace-org-mode-hook)
-  :hook (ruby-mode . embrace-ruby-mode-hook)
+  :hook ((ruby-mode ruby-ts-mode) . embrace-ruby-mode-hook)
   :hook (emacs-lisp-mode . embrace-emacs-lisp-mode-hook)
-  :hook ((c++-mode c++-ts-mode rustic-mode csharp-mode java-mode swift-mode typescript-mode)
-         . +evil-embrace-angle-bracket-modes-hook-h)
-  :hook (scala-mode . +evil-embrace-scala-mode-hook-h)
+  :hook ((c++-mode c++-ts-mode) . +evil-embrace-angle-bracket-modes-hook-h)
+  :hook ((csharp-mode csharp-ts-mode) . +evil-embrace-angle-bracket-modes-hook-h)
+  :hook ((java-mode java-ts-mode) . +evil-embrace-angle-bracket-modes-hook-h)
+  :hook ((scala-mode scala-ts-mode) . +evil-embrace-scala-mode-hook-h)
+  :hook ((swift-mode typescript-mode rustic-mode) . +evil-embrace-angle-bracket-modes-hook-h)
   :init
   (after! evil-surround
     (evil-embrace-enable-evil-surround-integration))
@@ -339,7 +344,7 @@ don't offer any/enough real value to users.")
   ;;   buffer-localize `embrace--pairs-list' (which happens right after it calls
   ;;   `embrace--setup-defaults'), otherwise any new, global default pairs we
   ;;   define won't be in scope.
-  (defadvice! +evil--embrace-init-escaped-pairs-a (&rest args)
+  (defadvice! +evil--embrace-init-escaped-pairs-a (&rest _)
     "Add escaped-sequence support to embrace."
     :after #'embrace--setup-defaults
     (embrace-add-pair-regexp ?\\ "\\[[{(]" "\\[]})]" #'+evil--embrace-escaped
@@ -426,11 +431,11 @@ don't offer any/enough real value to users.")
 
 
 (use-package! evil-surround
+  :hook (doom-first-input . global-evil-surround-mode)
   :commands (global-evil-surround-mode
              evil-surround-edit
              evil-Surround-edit
-             evil-surround-region)
-  :config (global-evil-surround-mode 1))
+             evil-surround-region))
 
 
 (use-package! evil-textobj-anyblock

@@ -92,7 +92,7 @@ inserting the link."
     org-id-link-to-org-use-id +org-roam-link-to-org-use-id)
 
   ;; Normally, the org-roam buffer won't open until `org-roam-buffer-toggle' is
-  ;; explicitly called. If `+org-roam-open-buffer-on-find-file' is non-nil, the
+  ;; explicitly called. If `+org-roam-auto-backlinks-buffer' is non-nil, the
   ;; org-roam buffer will automatically open whenever a file in
   ;; `org-roam-directory' is visited and closed when no org-roam buffers remain.
   (add-hook! 'org-roam-find-file-hook :append
@@ -106,7 +106,7 @@ inserting the link."
        :side right :width 0.33 :height 0.5 :ttl nil :modeline nil :quit nil :slot 2)))
 
   ;; Soft-wrap lines in the backlinks buffer
-  (add-hook 'org-roam-mode-hook #'turn-on-visual-line-mode)
+  (add-hook 'org-roam-mode-hook #'visual-line-mode)
 
   ;; Use a 'roam:X' link's description if X is empty.
   ;; REVIEW: PR this upstream?

@@ -10,9 +10,7 @@
 
   (add-hook 'graphql-mode-hook #'rainbow-delimiters-mode)
   (set-docsets! mode :add "GraphQL Specification")
-  (set-electric! mode
-    :chars '(?\} ?\))
-    :words '("or" "and"))
+  (set-electric! mode :words '("or" "and"))
   (set-ligatures! mode
     :null "null"
     :true "true" :false "false"
@@ -29,7 +27,8 @@
     '((t (:foreground "#E10098")))
     "Face for GraphQL icon."
     :group 'nerd-icons-faces)
-  (+graphql-common-config 'graphql-mode))
+  (+graphql-common-config 'graphql-mode)
+  (set-electric! 'graphql-mode :chars '(?\} ?\))))
 
 
 (use-package! graphql-ts-mode

@@ -52,8 +52,7 @@ This is ignored by ccls.")
 
   (set-docsets! '(c-mode c-ts-mode) "C")
   (set-docsets! '(c++-mode c++-ts-mode) "C++" "Boost")
-  (set-electric! '(c-mode c++-mode objc-mode java-mode
-                   c-ts-mode c++-ts-mode java-ts-mode)
+  (set-electric! '(c-mode c++-mode objc-mode java-mode)
                  :chars '(?\n ?\} ?\{))
   (set-rotate-patterns! '(c++-mode c++-ts-mode)
     :symbols '(("public" "protected" "private")
@@ -73,6 +72,7 @@ This is ignored by ccls.")
     :for "for"
     :return "return"
     :yield "#require")
+  (set-indent-vars! 'objc-mode 'c-basic-offset)
 
   (add-to-list 'find-sibling-rules '("/\\([^/]+\\)\\.c\\(c\\|pp\\)?\\'" "\\1.h\\(h\\|pp\\)?\\'"))
   (add-to-list 'find-sibling-rules '("/\\([^/]+\\)\\.h\\(h\\|pp\\)?\\'" "\\1.c\\(c\\|pp\\)?\\'"))
@@ -129,7 +129,7 @@ This is ignored by ccls.")
   :defer t
   :init
   (when (and (modulep! +tree-sitter)
-             (boundp 'cmake-ts-mode)) ; 29+ only
+             (fboundp 'cmake-ts-mode)) ; 29+ only
     (set-tree-sitter! 'cmake-mode 'cmake-ts-mode
       '((cmake :url "https://github.com/uyha/tree-sitter-cmake"))))
   :config

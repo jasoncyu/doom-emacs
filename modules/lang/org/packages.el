@@ -42,11 +42,12 @@
                (insert-file-contents "org-loaddefs.el")
                (save-excursion (insert "\n"))
                (insert-file-contents afile))))
-  :pin "89df5bf46ba214db44eea898cc7cacc0b27fd760")  ; release_9.8
+  :pin "2ef390bfaf7f8e9206b4c923ea0a849ad427be41"  ; release_9.8.2
+  :env `((org--inhibit-version-check . t)))
 (package! org-contrib
   :recipe (:host github
            :repo "emacsmirror/org-contrib")
-  :pin "90e1d6bd6288615233dae273f0525a43a9d8779d")
+  :pin "b840bdabd1867f9d51ee36bef7bac4be7073288c")  ; release_0.8
 
 (package! avy)
 (package! htmlize :pin "fa644880699adea3770504f913e6dddbec90c076")
@@ -54,21 +55,9 @@
 (package! toc-org :pin "6d3ae0fc47ce79b1ea06cabe21a3c596395409cd")
 (package! org-cliplink :pin "13e0940b65d22bec34e2de4bc8cba1412a7abfbc")
 
-;; TODO: Adjust when this is added to GNU ELPA
-(when (modulep! +contacts)
-  (package! org-contacts
-    :recipe (:host github :repo "doomelpa/org-contacts")
-    :pin "b06a59736800865b8a7e8d6d45774169cb31528a"))
-
 (when (and (featurep :system 'macos)
            (modulep! :os macos))
   (package! org-mac-link :pin "e30171a6e98db90787ab8a23b3a7dc4fd13b10f9"))
-
-(when (modulep! +passwords)
-  (package! org-passwords
-    :pin "61584aa701defcc0c435d3e7552916235cb655a6"
-    :recipe (:host github
-             :repo "alfaromurillo/org-passwords.el")))
 
 (when (modulep! :editor evil +everywhere)
   (package! evil-org
@@ -77,38 +66,33 @@
 (when (modulep! +dragndrop)
   (package! org-download :pin "c8be2611786d1d8d666b7b4f73582de1093f25ac"))
 (when (modulep! +gnuplot)
-  (package! gnuplot :pin "4c6b18f71ff7604e2640033207f5a882ddce78af")
+  (package! gnuplot :pin "1a1481109b53a21429f3b919721464dbf3a0b814")
   (package! gnuplot-mode :pin "601f6392986f0cba332c87678d31ae0d0a496ce7"))
 (when (modulep! +jupyter)
-  (package! jupyter :pin "242fdc709ce0faa3b9ee81dcc48cfd791898e6b8"))
+  (package! jupyter :pin "242fdc709ce0faa3b9ee81dcc48cfd791898e6b8" :freeze t))
 (when (modulep! +journal)
-  (package! org-journal :pin "831ecfd50a29057c239b9fa55ebc02d402a6d4a7"))
+  (package! org-journal :pin "6460f6f2b0835b4b8aa87d5fdf40cac7deb319f5"))
 (when (modulep! +noter)
-  (package! org-noter :pin "81765d267e51efd8b4f5b7276000332ba3eabbf5"))
-(when (modulep! +pomodoro)
-  (package! org-pomodoro :pin "3f5bcfb80d61556d35fc29e5ddb09750df962cc6"))
+  (package! org-noter :pin "ab9628e449d76af8b2e5a9d5fead4e03ca76a03d"))
 (when (modulep! +pretty)
-  (package! org-modern :pin "b4b5b1c864f1fdf240d1bbd7093529f5a75e8a06")
+  (package! org-modern :pin "713beb72aed4db43f8a10feed72136e931eb674a")
   (package! org-appear :pin "32ee50f8fdfa449bbc235617549c1bccb503cb09"))
 (when (modulep! +present)
   (package! centered-window
     :recipe (:host github :repo "nullvec/centered-window-mode")
     :pin "701f56cd1d2b68352d29914f05ca1b0037bb2595")
   (package! org-tree-slide :pin "e2599a106a26ce5511095e23df4ea04be6687a8a")
-  (package! org-re-reveal :pin "8245facfdca168a728f3761d863af28ee05af171")
+  (package! org-re-reveal :pin "9f09f2100a77e0dabe2c0d89bb62b29d96ab0206")
   (package! revealjs
     :recipe (:host github :repo "hakimel/reveal.js"
              :files ("css" "dist" "js" "plugin"))
-    :pin "0753c057773ed3e3ec68a558e9af38d8fce728b8"))
+    :pin "b5b37a5fa8af4291ab6780f39514ed6508f9b073"))
 (when (or (modulep! +roam)
           (modulep! +roam2))
   (package! org-roam :pin "7cd906b6f8b18a21766228f074aff24586770934"))
 
 ;;; Babel
 (package! ob-async :pin "9aac486073f5c356ada20e716571be33a350a982")
-(when (modulep! :lang clojure)
-  (package! ob-clojure-literate
-    :pin "18c3ea15b872a43e67c899a9914182c35b00b7ee"))
 (when (modulep! :lang crystal)
   (package! ob-crystal :pin "d84c1adee4b269cdba06a97caedb8071561a09af"))
 (when (modulep! :lang elixir)
@@ -141,9 +125,5 @@
 ;;; Export
 (when (modulep! +pandoc)
   (package! ox-pandoc :pin "1caeb56a4be26597319e7288edbc2cabada151b4"))
-(when (modulep! +hugo)
-  (package! ox-hugo
-    :recipe (:host github :repo "kaushalmodi/ox-hugo" :nonrecursive t)
-    :pin "b7dc44dc28911b9d8e3055a18deac16c3b560b03"))
 (when (modulep! :lang rst)
   (package! ox-rst :pin "b73eff187eebac24b457688bfd27f09eff434860"))

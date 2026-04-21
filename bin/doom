@@ -71,6 +71,10 @@
 ;;   symlinked to in the esoteric OSes/distros Emacs users use.
 ;; - The user may have mounted /tmp with a noexec flag, so pass the exit script
 ;;   to /bin/sh rather than executing them directly.
+;; - The (setq warning-inhibit-types '((files missing-lexbind-cookie))) is
+;;   necessary on later versions of Emacs 31, where Emacs will throw warnings
+;;   when loading elisp that lack 'lexical-binding: t' header line. Setting it
+;;   here or in lisp/doom.el is not enough, though I do it anyway.
 
 ;; Doom's core sets up everything we need; including `doom-*-dir' variables,
 ;; universal defaults, and autoloads for doom-*-initialize functions.
@@ -273,9 +277,9 @@ SEE ALSO:
     (defcli-autoload! (gc))
     (defcli-autoload! (install))
 
-    (defcli-obsolete! (profiles sync) (profile sync "--all") "3.0.0")
-    (defcli-obsolete! ((build b)) (sync "--rebuild") "3.0.0")
-    (defcli-obsolete! ((purge p)) (gc) "3.0.0")
+    (defcli-obsolete! (profiles sync) (profile sync "--all") "2.1.0")
+    (defcli-obsolete! ((build b)) (sync "--rebuild") "2.1.0")
+    (defcli-obsolete! ((purge p)) (gc) "2.1.0")
 
     ;; TODO Post-3.0 commands
     (defcli-stub! module)
@@ -288,7 +292,7 @@ SEE ALSO:
     (defcli-autoload! (ci))
     (defcli-autoload! (make))
     (defcli-autoload! (emacs))
-    (defcli-obsolete! (run) (emacs) "3.0.0")
+    (defcli-obsolete! (run) (emacs) "2.1.0")
 
     ;; TODO Post-3.0 commands
     (defcli-stub! test))

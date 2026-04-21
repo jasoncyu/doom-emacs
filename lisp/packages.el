@@ -7,8 +7,9 @@
 (package! compat
   :recipe (:host github :repo "emacs-compat/compat")
   :pin "38df650dce9f862c6b523de5b683573df590ab85")
-(package! gcmh
-  :pin "0089f9c3a6d4e9a310d0791cf6fa8f35642ecfd9")
+(unless (fboundp 'igc-info)
+  (package! gcmh
+    :pin "0089f9c3a6d4e9a310d0791cf6fa8f35642ecfd9"))
 
 ;; doom-packages.el
 (package! straight
@@ -21,7 +22,7 @@
   :pin "09b789a8596cacca6bbff866500373541a85ffa2")
 
 ;; doom-ui.el
-(package! nerd-icons :pin "9a7f44db9a53567f04603bc88d05402cad49c64c")
+(package! nerd-icons :pin "1db0b0b9203cf293b38ac278273efcfc3581a05f")
 (package! hide-mode-line :pin "ddd154f1e04d666cd004bf8212ead8684429350d")
 
 ;; doom-editor.el
@@ -29,8 +30,8 @@
 (package! smartparens :pin "82d2cf084a19b0c2c3812e0550721f8a61996056")
 
 ;; doom-projects.el
-(package! projectile :pin "4469d33f4921432e67b98151eeb6b4c2a17d648e")
-(package! project :pin "11a821c6529c2cb8b388be80371952a61b4b5e3a")
+(package! projectile :pin "f8be23b266aec7108fb4b80410623cd50ba8ded9")
+(package! project :pin "041a69d062a5442e2b0fee125c3228225f894ce1")
 
 ;; doom-keybinds.el
 (package! general :pin "a48768f85a655fe77b5f45c2880b420da1b1b9c3")

@@ -4,15 +4,16 @@
 ;; by apps Reeder and Readkit. It can be invoked via `=rss'. Otherwise, if you
 ;; don't care for the UI you can invoke elfeed directly with `elfeed'.
 
-(defvar +rss-split-direction 'below
-  "What direction to pop up the entry buffer in elfeed.")
-
-(defvar +rss-enable-sliced-images t
+(defcustom +rss-enable-sliced-images t
   "Automatically slice images shown in elfeed-show-mode buffers, making them
-easier to scroll through.")
+easier to scroll through."
+  :type 'boolean
+  :group '+rss)
 
-(defvar +rss-workspace-name "*rss*"
-  "Name of the workspace that contains the elfeed buffer.")
+(defcustom +rss-workspace-name "*rss*"
+  "Name of the workspace that contains the elfeed buffer."
+  :type 'string
+  :group '+rss)
 
 
 ;;
@@ -64,8 +65,20 @@ easier to scroll through.")
       (kbd "M-RET") #'elfeed-search-browse-url)
     (map! :map elfeed-show-mode-map
           :n "gc" nil
-          :n "gc" #'+rss/copy-link)))
+          :n "gc" #'+rss/copy-link))
 
+  ;; HACK: Fix visual-line mode (evil) selecting +1 line when executing
+  ;;   elfeed-search operations on selected entries.
+  (defadvice! +rss--fix-elfeed-search-selected-off-by-one-a (fn &optional ignore-region-p)
+    :around #'elfeed-search-selected
+    (if (and (bound-and-true-p evil-local-mode)
+             (doom-region-active-p)
+             (let ((end (region-end)))
+               (and (> end (region-beginning))
+                    (save-excursion (goto-char end) (bolp)))))
+        (letf! (defun region-end () (1- (funcall region-end)))
+          (funcall fn ignore-region-p))
+      (funcall fn ignore-region-p))))
 
 
 (use-package! elfeed-org
