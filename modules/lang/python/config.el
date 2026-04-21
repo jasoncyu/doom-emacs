@@ -293,7 +293,7 @@
 (with-eval-after-load 'lsp-mode
   (setq lsp-disabled-clients '(pylsp pyls))
   (lsp-register-client
-   (make-lsp-client :new-connection (lsp-tramp-connection "ty server")
-                    :major-modes '(python-mode)
-                    :priority 100 ; Higher numbers take precedence
+   (make-lsp-client :new-connection (lsp-stdio-connection '("ty" "server"))
+                    :major-modes '(python-mode python-ts-mode)
+                    :priority 100
                     :server-id 'ty)))

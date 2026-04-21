@@ -1,5 +1,7 @@
 ;;; lang/org/config.el -*- lexical-binding: t; -*-
 
+(declare-function org/mark-done-from-last-clock "org-jason")
+
 (defvar +org-babel-native-async-langs '(python)
   "Languages that will use `ob-comint' instead of `ob-async' for `:async'.")
 
@@ -475,7 +477,7 @@ relative to `org-directory', unless it is an absolute path."
       (add-to-list 'projectile-globally-ignored-directories org-attach-id-dir)))
 
   ;; Add inline image previews for attachment links
-  (org-link-set-parameters "attachment" :preview #'+org-preview-image-file-fn))
+  (org-link-set-parameters "attachment" :preview #'+org-link-preview-attachment-fn))
 
 
 (defun +org-init-custom-links-h ()
@@ -843,7 +845,9 @@ between the two."
         "o" #'org-set-property
         "q" #'org-set-tags-command
         "t" #'org-todo
-        "T" #'org-todo-list
+        "T" #'org/mark-done-from-last-clock
+        ;; Creates agenda view of todos, not that useful
+        ;; "T" #'org-todo-list
         "x" #'org-toggle-checkbox
         (:prefix ("a" . "attachments")
          "a" #'org-attach
