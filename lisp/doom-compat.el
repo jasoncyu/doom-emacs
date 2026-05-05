@@ -256,11 +256,15 @@ Hide the mode line if it is shown, and show it if it's hidden."
         (progn
           (add-hook 'after-change-major-mode-hook #'mode-line-invisible-mode nil t)
           (setq mode-line-invisible--buf-state
-                (buffer-local-set-state mode-line-format nil)))
+                `(mode-line-format
+                  ,(local-variable-p 'mode-line-format)
+                  ,mode-line-format))
+          (setq-local mode-line-format nil))
       (remove-hook 'after-change-major-mode-hook #'mode-line-invisible-mode t)
       (when mode-line-invisible--buf-state
         (setq mode-line-invisible--buf-state
-              (buffer-local-restore-state mode-line-invisible--buf-state)))
+              (cl-destructuring-bind (var local val) mode-line-invisible--buf-state
+                (if local (set var val) (kill-local-variable var)))))
       (unless mode-line-format
         (setq-local mode-line-format (default-value 'mode-line-format)))
       (when (called-interactively-p 'any)
