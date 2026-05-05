@@ -90,6 +90,10 @@
         gcmh-high-cons-threshold (* 64 1024 1024))  ; 64mb
   (add-hook 'doom-first-buffer-hook #'gcmh-mode))
 
+;; Background native compilation consumes several CPU cores and takes minutes to
+;; complete. Not worth the extra stress when on battery power.
+(setq native-comp-async-on-battery-power nil)
+
 
 ;;; Disable UI elements early
 ;; PERF,UI: Doom strives to be keyboard-centric, so I consider these UI elements
