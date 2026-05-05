@@ -23,7 +23,6 @@
 
 ;; doom-ui.el
 (package! nerd-icons :pin "ae1b85c487c2b0bb1efb8bc0edc23af74282eec2")
-(package! hide-mode-line :pin "ddd154f1e04d666cd004bf8212ead8684429350d")
 
 ;; doom-editor.el
 (package! better-jumper :pin "b1bf7a3c8cb820d942a0305e0e6412ef369f819c")
