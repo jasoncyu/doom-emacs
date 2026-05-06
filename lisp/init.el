@@ -13,6 +13,12 @@
 (doom-require 'doom-projects)
 (doom-require 'doom-editor)
 
+;; Trust the contents of $EMACSDIR and $DOOMDIR, because the user will likely be
+;; working with either/both.
+(when (boundp 'trusted-content)
+  (add-to-list 'trusted-content (file-truename doom-emacs-dir))
+  (add-to-list 'trusted-content (file-truename doom-user-dir)))
+
 ;; Ensure .dir-locals.el in $EMACSDIR and $DOOMDIR are always respected
 (add-to-list 'safe-local-variable-directories doom-emacs-dir)
 (add-to-list 'safe-local-variable-directories doom-user-dir)
