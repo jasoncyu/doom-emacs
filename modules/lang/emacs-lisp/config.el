@@ -350,6 +350,10 @@ current buffer."
         "r" #'+emacs-lisp/helpful-next))
 
 
+(use-package! let-completion
+  :hook (emacs-lisp-mode . let-completion-mode))
+
+
 ;;
 ;;; Project modes
 
